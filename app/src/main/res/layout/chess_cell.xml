@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="utf-8"?>
+<com.example.chess.ui.ChessSquareView
+    android:id="@+id/chess_cell_layout"
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    android:foreground="?android:attr/selectableItemBackground"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+
+    <com.example.chess.ui.ChessPieceView
+        android:id="@+id/chess_cell_image"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:src="@drawable/pawn_white"
+        app:layout_constraintStart_toStartOf="parent"
+        app:layout_constraintTop_toTopOf="parent">
+
+    </com.example.chess.ui.ChessPieceView>
+
+    <TextView
+        android:id="@+id/chess_cell_rank_text"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        app:layout_constraintStart_toStartOf="@id/chess_cell_layout"
+        app:layout_constraintTop_toTopOf="@id/chess_cell_layout"
+        android:layout_margin="2dp"
+        android:textSize="12sp"
+        android:textColor="@color/black"
+        android:textStyle="bold"
+        android:text="1">
+
+    </TextView>
+
+    <TextView
+        android:id="@+id/chess_cell_file_text"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        app:layout_constraintEnd_toEndOf="@id/chess_cell_layout"
+        app:layout_constraintBottom_toBottomOf="@id/chess_cell_layout"
+        android:layout_margin="2dp"
+        android:textSize="12sp"
+        android:textColor="@color/black"
+        android:textStyle="bold"
+        android:text="a">
+
+    </TextView>
+
+</com.example.chess.ui.ChessSquareView>
