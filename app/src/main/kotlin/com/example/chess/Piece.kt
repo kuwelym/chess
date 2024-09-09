@@ -1,15 +1,28 @@
 package com.example.chess
 
+import android.util.Log
 import com.example.chess.board.Board
 import com.example.chess.board.Position
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Deferred
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.async
+import kotlinx.coroutines.ensureActive
+import kotlinx.coroutines.withContext
+import kotlinx.coroutines.yield
 
 sealed class Piece {
     // The player who owns the piece
     abstract val player: Player
+
     // Name of the piece
     abstract val name: String
+
     // Current position of the piece on the board
     abstract val position: Position
+
     // A list to store the moves of the piece
     abstract val history: List<Position>
 
@@ -21,8 +34,22 @@ sealed class Piece {
         return name
     }
 
-    fun generateMoves(board: Board, validateForCheck: Boolean = true): Set<Move> {
-        return moves.flatMap { MovesGenerator.generate(board, this, validateForCheck) }.toSet()
+    val lastGeneratedMoves = mutableSetOf<Move>()
+
+    @OptIn(ExperimentalCoroutinesApi::class)
+    fun generateMoves(board: Board, validateForCheck: Boolean = true): Deferred<Set<Move>> {
+        val dispatcher = Dispatchers.IO.limitedParallelism(Runtime.getRuntime().availableProcessors())
+        return CoroutineScope(dispatcher).async {
+            val generatedMoves =
+                moves.flatMap { MovesGenerator.generate(board, this@Piece, validateForCheck) }
+                    .toSet()
+
+            synchronized(lastGeneratedMoves) {
+                lastGeneratedMoves.clear()
+                lastGeneratedMoves.addAll(generatedMoves)
+            }
+            generatedMoves
+        }
     }
 }
 
@@ -43,7 +70,7 @@ infix fun Piece.moveTo(position: Position): Piece {
 data class Pawn(
     override val player: Player,
     override val position: Position,
-    override val history: List<Position> = listOf(position)
+    override val history: List<Position> = emptyList()
 ) : Piece() {
     override val name: String
         get() = "Pawn_${player.name}"
@@ -58,7 +85,7 @@ data class Pawn(
 data class Rook(
     override val player: Player,
     override val position: Position,
-    override val history: List<Position> = listOf(position)
+    override val history: List<Position> = emptyList()
 ) : Piece() {
     override val name: String
         get() = "Rook_${player.name}"
@@ -74,7 +101,7 @@ data class Rook(
 data class Knight(
     override val player: Player,
     override val position: Position,
-    override val history: List<Position> = listOf(position)
+    override val history: List<Position> = emptyList()
 ) : Piece() {
     override val name: String
         get() = "Knight_${player.name}"
@@ -94,7 +121,7 @@ data class Knight(
 data class Bishop(
     override val player: Player,
     override val position: Position,
-    override val history: List<Position> = listOf(position)
+    override val history: List<Position> = emptyList()
 ) : Piece() {
     override val name: String
         get() = "Bishop_${player.name}"
@@ -110,7 +137,7 @@ data class Bishop(
 data class Queen(
     override val player: Player,
     override val position: Position,
-    override val history: List<Position> = listOf(position)
+    override val history: List<Position> = emptyList()
 ) : Piece() {
     override val name: String
         get() = "Queen_${player.name}"
@@ -130,7 +157,7 @@ data class Queen(
 data class King(
     override val player: Player,
     override val position: Position,
-    override val history: List<Position> = listOf(position)
+    override val history: List<Position> = emptyList()
 ) : Piece() {
     override val name: String
         get() = "King_${player.name}"
@@ -148,6 +175,7 @@ data class King(
 }
 
 typealias Direction = Pair<Int, Int>
+
 operator fun Direction.times(value: Int): Direction {
     return Direction(first * value, second * value)
 }

@@ -1,11 +1,15 @@
 package com.example.chess.board
 
 
+import android.util.Log
+import androidx.core.view.children
+import androidx.lifecycle.ViewModel
 import com.example.chess.Bishop
 import com.example.chess.DrawType
 import com.example.chess.GameResult
 import com.example.chess.King
 import com.example.chess.Knight
+import com.example.chess.MainActivity
 import com.example.chess.Move
 import com.example.chess.Pawn
 import com.example.chess.Piece
@@ -14,16 +18,24 @@ import com.example.chess.Queen
 import com.example.chess.Rook
 import com.example.chess.WinType
 import com.example.chess.getImpactedSquares
+import com.example.chess.isCheck
 import com.example.chess.isCheckmate
 import com.example.chess.isStalemate
 import com.example.chess.opponent
+import com.example.chess.ui.AppData
+import com.example.chess.ui.ChessPieceView
+import com.example.chess.ui.DefaultModelViewMapper
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 import kotlin.reflect.KClass
 import kotlin.reflect.cast
 
 /**
  * Chess board with a 8x8 matrix of [Square]s holding the current game state.
- *
- * @author Dominik Hoftych
  */
 class Board {
 
@@ -52,8 +64,7 @@ class Board {
      * on turn if [setPieces] is true, or an empty board without pieces
      */
     private constructor(setPieces: Boolean = true) {
-        this.squares = Matrix(8, 8) {
-                row, col ->
+        this.squares = Matrix(8, 8) { row, col ->
             Position(row, col).let {
                 Square(it, if (setPieces) resolvePiece(it) else null)
             }
@@ -61,13 +72,33 @@ class Board {
         this.currentPlayer = Player.WHITE
         this.previousBoard = null
         this.playedMoves = emptyList()
+
+        CoroutineScope(Dispatchers.IO).launch {
+            generateMovesForBoard(this@Board)
+        }
+    }
+
+    @OptIn(ExperimentalCoroutinesApi::class)
+    private suspend fun generateMovesForBoard(board: Board) {
+        val dispatcher = Dispatchers.IO.limitedParallelism(Runtime.getRuntime().availableProcessors())
+        coroutineScope {
+            getPieces(board.currentPlayer).forEach { piece ->
+                launch(dispatcher) {
+                    try {
+                        piece.generateMoves(board)
+                    } catch (e: Exception) {
+                        Log.e("Board", "Error generating moves for piece $piece", e)
+                    }
+                }
+            }
+        }
     }
 
     /**
      * Initializes a new board as a result of updating the [previousBoard] with
      * given [updatedSquares]. If [takeTurns] is true, the players take turns.
      */
-    private constructor(
+    private constructor (
         previousBoard: Board,
         updatedSquares: Map<Position, Square>,
         takeTurns: Boolean,
@@ -77,21 +108,39 @@ class Board {
             val position = Position(row, col)
             updatedSquares[position] ?: previousBoard.getSquare(position)
         }
-        this.currentPlayer = if (takeTurns) previousBoard.currentPlayer.opponent() else previousBoard.currentPlayer
+        this.currentPlayer =
+            if (takeTurns) previousBoard.currentPlayer.opponent() else previousBoard.currentPlayer
         this.previousBoard = previousBoard
         this.playedMoves = playedMoves
+
     }
 
     /**
      * Plays the given [move] and returns an updated board with the move recorded
      * in the list of played moves. If [takeTurns] is true, the players take turn.
      */
-    fun playMove(move: Move, takeTurns: Boolean = true) = Board(
-        previousBoard = this,
-        updatedSquares = move.getImpactedSquares().associateBy { it.position },
-        takeTurns = takeTurns,
-        playedMoves = playedMoves.plus(move)
-    )
+    @OptIn(ExperimentalCoroutinesApi::class)
+    fun playMove(move: Move, takeTurns: Boolean = true): Board {
+        val updatedSquares = move.getImpactedSquares()
+        val board = Board(
+            previousBoard = this,
+            updatedSquares = updatedSquares.associateBy { it.position },
+            takeTurns = takeTurns,
+            playedMoves = playedMoves.plus(move)
+        )
+        if (takeTurns) {
+            board.squares.forEach{
+                Log.d("Board", "Square: ${it.piece}")
+            }
+            DefaultModelViewMapper.pieceViewMapper.onMovePlayed(updatedSquares, board)
+            val dispatcher = Dispatchers.IO.limitedParallelism(Runtime.getRuntime().availableProcessors())
+            CoroutineScope(dispatcher).launch {
+                generateMovesForBoard(board)
+            }
+            AppData.notationViewModel.updatePlayedNotations(board.playedMoves)
+        }
+        return board
+    }
 
     /**
      * Returns the [Square] on given [position], or throws exception if given position is not on the board
@@ -105,16 +154,21 @@ class Board {
     /**
      * Returns the [Square] on given [position], or null if the given position is not on the board
      */
-    fun getSquareOrNull(position: Position): Square? = if (position.isValid) squares[position] else null
+    fun getSquareOrNull(position: Position): Square? =
+        if (position.isValid) squares[position] else null
 
     /**
      * Returns all pieces of given [player] and [type]
      */
-    fun <T : Piece> getPieces(player: Player = currentPlayer, type: KClass<T>): List<T> = squares
-        .mapNotNull { it.piece }
-        .filter { it.player == player }
-        .filterIsInstance(type.java)
-        .map { type.cast(it) }
+    private fun <T : Piece> getPieces(
+        player: Player = currentPlayer,
+        type: KClass<T>
+    ): List<T> =
+        squares
+            .mapNotNull { it.piece }
+            .filter { it.player == player }
+            .filterIsInstance(type.java)
+            .map { type.cast(it) }
 
     /**
      * Returns all pieces of given [player]
@@ -131,11 +185,14 @@ class Board {
     /**
      * Returns a [GameResult] describing the current state of this board
      */
-    fun getGameResult(): GameResult = when {
-        isStalemate() -> GameResult.Draw(DrawType.STALEMATE)
-        isCheckmate() && whiteOnTurn() -> GameResult.BlackWins(WinType.CHECKMATE)
-        isCheckmate() && !whiteOnTurn() -> GameResult.WhiteWins(WinType.CHECKMATE)
-        else -> GameResult.StillPlaying
+    fun getGameResult(): GameResult = runBlocking {
+        when {
+
+            isStalemate() -> GameResult.Draw(DrawType.STALEMATE)
+            isCheckmate() && whiteOnTurn() -> GameResult.BlackWins(WinType.CHECKMATE)
+            isCheckmate() && !whiteOnTurn() -> GameResult.WhiteWins(WinType.CHECKMATE)
+            else -> GameResult.StillPlaying
+        }
     }
 
     /**
@@ -143,18 +200,7 @@ class Board {
      */
     private fun resolvePiece(position: Position): Piece? {
         val player: Player = if (position.row in 0..1) Player.BLACK else Player.WHITE
-        return when (position.row) {
-            1, 6 -> Pawn(player, position)
-            0, 7 -> when (position.col) {
-                0, 7 -> Rook(player, position)
-                1, 6 -> Knight(player, position)
-                2, 5 -> Bishop(player, position)
-                3 -> Queen(player, position)
-                4 -> King(player, position)
-                else -> throw IllegalArgumentException("Position out of bounds")
-            }
-            else -> null
-        }
+        return PieceFactory.createPiece(position, player)
     }
 
     override fun equals(other: Any?): Boolean {

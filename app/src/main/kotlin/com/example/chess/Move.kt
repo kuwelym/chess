@@ -2,6 +2,7 @@ package com.example.chess
 
 import com.example.chess.board.Position
 import com.example.chess.board.Square
+import com.example.chess.ui.AppData.board
 
 /** Abstract class representing a move in a chess game.
  * Including basic move, castling, promotion, en passant, etc.
@@ -18,7 +19,7 @@ sealed class Move {
  */
 data class BasicMove(override val piece: Piece, override val dest: Position, val capture: Boolean = false) : Move(){
     override fun toString(): String {
-        return "${if (piece is Pawn && capture) piece.position.file else ""}${piece.symbol}${if(capture) "x" else ""}${dest.file}${dest.rank}"
+        return "${if (piece is Pawn && capture) piece.position.file else ""}${piece.symbol}${if(capture) "x" else ""}${dest.file}${dest.rank}${checkSymbol(board)}"
     }
 
     val isPromotion: Boolean
@@ -33,20 +34,20 @@ data class BasicMove(override val piece: Piece, override val dest: Position, val
  */
 data class PromotionMove(override val piece: Piece, override val dest: Position, val capture: Boolean = false, val promotion: Piece) : Move(){
     override fun toString(): String {
-        return "${piece.position.file}${if(capture) "x" else ""}${dest.file}${dest.rank}=${promotion.symbol}"
+        return "${piece.position.file}${if(capture) "x" else ""}${dest.file}${dest.rank}=${promotion.symbol}${checkSymbol(board)}"
     }
 }
 
 /** A castling move.
- * @param piece the rook making the move
- * @param dest the destination square of the rook
- * @param king the king making the move
- * @param kingDest the destination square of the king
+ * @param piece the king making the move
+ * @param dest the destination square of the king
+ * @param rook the rook making the move
+ * @param rookDest the destination square of the rook
  * @param queenSide whether the move is queenSide castling
  */
-data class CastlingMove(override val piece: Piece, override val dest: Position, val king: Piece, val kingDest: Position, val queenSide: Boolean) : Move(){
+data class CastlingMove(override val piece: Piece, override val dest: Position, val rook: Rook, val rookDest: Position, val queenSide: Boolean) : Move(){
     override fun toString(): String {
-        return if(queenSide) "O-O-O" else "O-O"
+        return "${if(queenSide) "O-O-O" else "O-O"}${checkSymbol(board)}"
     }
 }
 
@@ -57,7 +58,7 @@ data class CastlingMove(override val piece: Piece, override val dest: Position, 
  */
 data class EnPassantMove(override val piece: Piece, override val dest: Position, val capture: Position) : Move() {
     override fun toString(): String {
-        return "${piece.position.file}x${dest.file}${dest.rank} e.p."
+        return "${piece.position.file}x${dest.file}${dest.rank} e.p.${checkSymbol(board)}"
     }
 }
 
@@ -80,15 +81,14 @@ fun Move.getImpactedSquares(): List<Square> {
         }
         is CastlingMove -> listOf(
             Square(piece.position, null),
-            Square(king.position, null),
+            Square(rook.position, null),
             Square(dest, piece moveTo dest),
-            Square(kingDest, king moveTo kingDest)
+            Square(rookDest, rook moveTo rookDest)
         )
         is EnPassantMove -> listOf(
             Square(piece.position, null),
             Square(dest, piece moveTo dest),
             Square(capture, null)
         )
-
     }
 }

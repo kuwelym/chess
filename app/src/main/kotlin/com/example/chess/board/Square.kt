@@ -17,10 +17,6 @@ class Square (val position: Position, val piece: Piece? = null) {
     init {
         require(position.isValid) { "Invalid position" }
     }
-
-    override fun toString(): String {
-        return piece?.toString() ?: " "
-    }
 }
 
 infix fun Square.isOccupiedBy(player: Player): Boolean {

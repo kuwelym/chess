@@ -1,22 +1,29 @@
 package com.example.chess
 
-import android.util.Log
 import com.example.chess.board.Board
+import com.example.chess.board.Position
 import com.example.chess.board.isOccupiedBy
+import com.example.chess.board.minus
 import com.example.chess.board.plus
 import com.example.chess.board.simulateMove
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 
 object MovesGenerator {
 
     fun generate(board: Board, piece: Piece, validateForCheck: Boolean): Set<Move> =
         when (piece) {
-        is Pawn -> pawnMoves(board, piece) + enPassantMoves(board, piece)
-        is Knight -> generateMoves(board, piece, 1)
-        is Bishop -> generateMoves(board, piece, 7)
-        is Rook -> generateMoves(board, piece, 7)
-        is Queen -> generateMoves(board, piece, 7)
-        is King -> generateMoves(board, piece, 1) + castlingMoves(board, piece)
-    }.filter { !validateForCheck || board.simulateMove(it).isNotCheck() }.toSet()
+            is Pawn -> pawnMoves(board, piece) + enPassantMoves(board, piece)
+            is Knight -> generateMoves(board, piece, 1)
+            is Bishop -> generateMoves(board, piece, 7)
+            is Rook -> generateMoves(board, piece, 7)
+            is Queen -> generateMoves(board, piece, 7)
+            is King -> generateMoves(board, piece, 1) + castlingMoves(board, piece)
+        }.filter { !validateForCheck || board.simulateMove(it).isNotCheck() }.toSet()
+
 
     private fun pawnMoves(board: Board, piece: Pawn): Set<Move> {
         val direction = piece.rowDirection
@@ -28,7 +35,7 @@ object MovesGenerator {
         }
 
         val forwardTwo = piece.position + (direction * 2 to 0)
-        if (piece.history.size == 1 && board.getSquareOrNull(forwardTwo)?.isEmpty == true && board.getSquareOrNull(
+        if (piece.history.isEmpty() && board.getSquareOrNull(forwardTwo)?.isEmpty == true && board.getSquareOrNull(
                 forwardOne
             )?.isEmpty == true
         ) {
@@ -44,7 +51,6 @@ object MovesGenerator {
         if (board.getSquareOrNull(attackRight)?.isOccupiedBy(piece.player.opponent()) == true) {
             moves += BasicMove(piece, attackRight, true)
         }
-
         return moves
     }
 
@@ -73,19 +79,27 @@ object MovesGenerator {
 
         if (piece.history.isNotEmpty()) return moves
 
-        val rooks = board.getPieces(piece.player).filterIsInstance<Rook>()
-        val kingSideRook = rooks.firstOrNull { it.position.col == 7 }
-        val queenSideRook = rooks.firstOrNull { it.position.col == 0 }
+        val kingSideRook = board.getSquare(Position(piece.position.row, 7)).piece as? Rook
+        val queenSideRook = board.getSquare(Position(piece.position.row, 0)).piece as? Rook
+
+        fun isCastlingPathClear(board: Board, kingPosition: Position, direction: Int, steps: Int): Boolean {
+
+            return (1..steps).all { offset ->
+                val position = kingPosition + (0 to offset * direction)
+                board.getSquareOrNull(position)?.isEmpty == true && runBlocking { !position.isUnderAttack(board) }
+            }
+        }
 
         if (kingSideRook != null && kingSideRook.history.isEmpty()) {
             val kingSideEmpty =
-                (5..6).all { board.getSquareOrNull(piece.position + (it to 0))?.isEmpty == true }
+                isCastlingPathClear(board, piece.position, 1, 2)
+
             if (kingSideEmpty) {
                 moves += CastlingMove(
-                    kingSideRook,
-                    piece.position + (6 to 0),
                     piece,
-                    piece.position + (5 to 0),
+                    piece.position + (0 to 2),
+                    kingSideRook,
+                    piece.position + (0 to 1),
                     false
                 )
             }
@@ -93,13 +107,14 @@ object MovesGenerator {
 
         if (queenSideRook != null && queenSideRook.history.isEmpty()) {
             val queenSideEmpty =
-                (1..3).all { board.getSquareOrNull(piece.position + (it to 0))?.isEmpty == true }
+                isCastlingPathClear(board, piece.position, -1, 3)
+
             if (queenSideEmpty) {
                 moves += CastlingMove(
-                    queenSideRook,
-                    piece.position + (2 to 0),
                     piece,
-                    piece.position + (3 to 0),
+                    piece.position - (0 to 2),
+                    queenSideRook,
+                    piece.position - (0 to 1),
                     true
                 )
             }

@@ -2,7 +2,6 @@ package com.example.chess.ui
 
 object ChessSelectionManager {
     private var selectedSquare: ChessSquareView? = null
-    private var legalSquares: Set<ChessSquareView> = emptySet()
 
     /**
      * Selects a square, highlights it, and ensures only one square is selected.
@@ -11,20 +10,20 @@ object ChessSelectionManager {
     fun selectSquare(square: ChessSquareView) {
         // Deselect the previously selected square, if any
         clearSelection()
+        DefaultModelViewMapper.moveViewMapper.clear()
+        LegalMoveManager.clearLegalMoves()
 
         // Select the new square
         selectedSquare = square
         square.setHighlighted(true)
-        showLegalMoves()
+        LegalMoveManager.setLegalMoves()
     }
 
     /**
      * Clears the current selection.
      */
-    private fun clearSelection() {
+    fun clearSelection() {
         selectedSquare?.setHighlighted(false)
-        // Clear legal moves
-        legalSquares.forEach { it.setLegalMove(false) }
         selectedSquare = null
     }
 
@@ -33,18 +32,6 @@ object ChessSelectionManager {
      */
     fun getSelectedSquare(): ChessSquareView? {
         return selectedSquare
-    }
-
-    private fun showLegalMoves() {
-        // get ChessPieceView child
-        val piece = selectedSquare?.getSquare()?.piece
-        val legalMoves = piece?.generateMoves(AppData.board, true)
-        legalMoves?.forEach { move ->
-            val targetSquare = AppData.board.getSquare(move.dest)
-            val targetSquareView = DefaultModelViewMapper.squareViewMapper.getViewForModel(targetSquare)
-            legalSquares += targetSquareView
-            targetSquareView.setLegalMove(true)
-        }
     }
 
 }

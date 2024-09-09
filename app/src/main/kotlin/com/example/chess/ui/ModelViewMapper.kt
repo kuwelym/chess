@@ -7,4 +7,6 @@ interface ModelViewMapper<T, V: View> {
     fun getModelForView(view: V): T?
     fun register(model: T, view: V)
     fun unregister(model: T)
+    fun contains(model: T): Boolean
+    fun contains(view: V): Boolean
 }

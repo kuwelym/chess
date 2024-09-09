@@ -10,6 +10,7 @@ import androidx.appcompat.widget.AppCompatImageView
 import com.example.chess.ChessBoardAdapter
 import com.example.chess.Move
 import com.example.chess.board.Square
+import com.example.chess.getImpactedSquares
 import com.example.chess.imageResource
 import com.example.chess.ui.AppData.board
 
@@ -20,32 +21,42 @@ class ChessPieceView(context: Context, attrs: AttributeSet?) : AppCompatImageVie
 
     override fun performClick(): Boolean {
         super.performClick()
-        if (square.piece == null) {
+        if (square.piece == null || square.piece!!.player != board.currentPlayer) {
             return false
         }
         ChessSelectionManager.selectSquare(parent as ChessSquareView)
         val startTime = System.currentTimeMillis()
-        val moveSet = square.piece?.generateMoves(board) ?: emptySet()
+        val moveSet = square.piece?.lastGeneratedMoves
+        Log.d("ChessPieceView", "Piece: ${square.piece}")
         Log.d("ChessPieceView", "Move set: $moveSet")
 
         val endTime = System.currentTimeMillis()
         val duration = endTime - startTime
-        Log.d("ChessPieceView", "Move took $duration ms")
-        movePiece(moveSet.first())
+        if (moveSet!!.isEmpty()) {
+            Log.d("ChessPieceView", "No moves available")
+            return false
+        }
+
 
         return true
     }
 
     init {
         setOnTouchListener { touchedView, event ->
-            Log.d("ChessBoardAdapter", "Touched view: $touchedView")
             when (event.action) {
                 MotionEvent.ACTION_DOWN -> {
+                    if ((parent as ChessSquareView).isLegalMove()) {
+                        (parent as ChessSquareView).performClick()
+                    }
                     touchedView.performClick()
                     val data = ClipData.newPlainText(
                         "piece",
                         touchedView.javaClass.simpleName
                     )
+                    val chessPieceView = touchedView as ChessPieceView
+                    if (!DefaultModelViewMapper.pieceViewMapper.contains(chessPieceView)) {
+                        return@setOnTouchListener false
+                    }
                     val shadowBuilder = DragShadowBuilder(touchedView)
                     touchedView.startDragAndDrop(data, shadowBuilder, touchedView, 0)
                     touchedView.visibility = View.INVISIBLE

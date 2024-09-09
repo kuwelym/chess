@@ -1,5 +1,7 @@
 package com.example.chess
 
+import com.example.chess.board.Board
+
 // Algebraic notation is a standard way to identify each square on the chessboard.
 enum class PieceNotationType{
     TEXT,
@@ -8,7 +10,7 @@ enum class PieceNotationType{
 
 // symbol is text or figurine representation of a piece
 val Piece?.symbol: String
-    get() = when(this){
+    get() = when (this) {
         is Pawn -> ""
         is Rook -> "R"
         is Knight -> "N"
@@ -17,3 +19,5 @@ val Piece?.symbol: String
         is King -> "K"
         else -> ""
     }
+
+fun Move.checkSymbol(board: Board) = if (board.isCheck()) "+" else ""

@@ -6,15 +6,14 @@ import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.Paint
 import android.util.AttributeSet
-import android.util.Log
 import android.view.DragEvent
 import android.view.View
 import android.view.ViewGroup
 import androidx.constraintlayout.widget.ConstraintLayout
 import androidx.core.content.res.ResourcesCompat
-import androidx.core.view.children
 import com.example.chess.R
 import com.example.chess.board.Square
+import com.example.chess.ui.AppData.board
 
 class ChessSquareView : ConstraintLayout {
     private var position: Int = 0
@@ -56,11 +55,15 @@ class ChessSquareView : ConstraintLayout {
                 }
 
                 DragEvent.ACTION_DROP -> {
-                    val item = event.clipData.getItemAt(0)
-                    val dragData = item.text.toString()
-                    Log.d("ChessBoardAdapter", "Dropped $dragData")
+//                    val item = event.clipData.getItemAt(0)
+//                    val dragData = item.text.toString()
 
                     val draggedView = event.localState as View
+                    if (LegalMoveManager.isLegalMove(this)) {
+                        playMove()
+                    } else {
+                        return@setOnDragListener false
+                    }
                     val draggedViewParent = draggedView.parent as ViewGroup
                     val dropTarget = targetView as ViewGroup
                     draggedViewParent.removeView(draggedView)
@@ -122,6 +125,13 @@ class ChessSquareView : ConstraintLayout {
     fun setLegalMove(legalMove: Boolean) {
         if (isLegalMove != legalMove) {
             isLegalMove = legalMove
+            if (legalMove) {
+                setOnClickListener {
+                    playMove()
+                }
+            } else {
+                setOnClickListener(null)
+            }
             this.invalidate()
         }
     }
@@ -187,23 +197,40 @@ class ChessSquareView : ConstraintLayout {
             paint.color = Color.RED
             canvas.drawRect(0f, 0f, squareSize, squareSize, paint)
         }
-        if(square.piece == null) {
-            // find first child that is a ChessPieceView
-            children.find { it is ChessPieceView }?.visibility = View.INVISIBLE
-        }
     }
 
     private fun drawLegalMove(canvas: Canvas) {
-        // Draw a round circle around middle
         val paint = Paint()
         paint.color = ResourcesCompat.getColor(resources, R.color.legal_moves_color, null)
-        canvas.drawCircle(width / 2f, height / 2f, Integer.min(width / 2, height / 2) / 4f, paint)
+
+        // Set the stroke style if there's a piece to draw a ring
+        if (square.piece != null) {
+            paint.style = Paint.Style.STROKE
+            paint.strokeWidth = 12f // Adjust the ring thickness here
+            canvas.drawCircle(
+                width / 2f,
+                height / 2f,
+                minOf(width / 1.3f, height / 1.3f) / 2f,
+                paint
+            )
+        } else {
+            // Draw a solid circle if the square is empty
+            paint.style = Paint.Style.FILL
+            canvas.drawCircle(
+                width / 2f,
+                height / 2f,
+                Integer.min(width / 2, height / 2) / 4f,
+                paint
+            )
+        }
     }
 
     private fun playMove() {
-        // Move the piece
-        AppData.board = AppData.board.playMove(DefaultModelViewMapper.moveViewMapper.getModelForView(this))
+        // Play the move
+        board = board.playMove(DefaultModelViewMapper.moveViewMapper.getModelForView(this))
         // Clear the legal moves
+        LegalMoveManager.clearLegalMoves()
+        ChessSelectionManager.clearSelection()
         DefaultModelViewMapper.moveViewMapper.clear()
     }
 }

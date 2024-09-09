@@ -1,5 +1,8 @@
 package com.example.chess.board
 
+/**
+ * Represents a matrix of elements of type [T]
+ */
 class Matrix<T>(
     private val rows: Int,
     private val cols: Int,

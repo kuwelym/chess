@@ -2,8 +2,6 @@ package com.example.chess
 
 /**
  * The result of the game, either a win, draw, or unknown if the game is still being played.
- *
- * @author Dominik Hoftych
  */
 sealed class GameResult {
     data class WhiteWins(val type: WinType) : GameResult()
