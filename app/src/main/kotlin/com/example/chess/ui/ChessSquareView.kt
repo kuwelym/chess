@@ -6,58 +6,42 @@ import android.graphics.Canvas
 import android.graphics.Color
 import android.graphics.Paint
 import android.util.AttributeSet
+import android.util.Log
 import android.view.DragEvent
 import android.view.View
 import android.view.ViewGroup
 import androidx.constraintlayout.widget.ConstraintLayout
 import androidx.core.content.res.ResourcesCompat
+import androidx.core.view.forEachIndexed
 import com.example.chess.R
 import com.example.chess.board.Square
 import com.example.chess.ui.AppData.board
 
+data class SquareState(
+    val isHighlighted: Boolean = false,
+    val isLastMove: Boolean = false,
+    val isLegalMove: Boolean = false,
+    val isCheck: Boolean = false
+)
+
 class ChessSquareView : ConstraintLayout {
     private var position: Int = 0
-    private var isHighlighted: Boolean = false
-    private var isLastMove: Boolean = false
-    private var isLegalMove: Boolean = false
-    private var isCheck: Boolean = false
     private lateinit var square: Square
-
     private var paint = Paint()
 
     constructor(context: Context) : super(context)
     constructor(context: Context, attrs: AttributeSet) : super(context, attrs)
-    constructor(context: Context, attrs: AttributeSet, defStyleAttr: Int) : super(
-        context,
-        attrs,
-        defStyleAttr
-    )
+
+    var state = SquareState()
 
     init {
         setOnDragListener { targetView, event ->
             when (event.action) {
-
                 DragEvent.ACTION_DRAG_STARTED -> {
                     event.clipDescription.hasMimeType(ClipDescription.MIMETYPE_TEXT_PLAIN)
-                    true
-                }
-
-                DragEvent.ACTION_DRAG_ENTERED -> {
-                    true
-                }
-
-                DragEvent.ACTION_DRAG_EXITED -> {
-                    true
-                }
-
-                DragEvent.ACTION_DRAG_LOCATION -> {
-                    true
                 }
 
                 DragEvent.ACTION_DROP -> {
-//                    val item = event.clipData.getItemAt(0)
-//                    val dragData = item.text.toString()
-
                     val draggedView = event.localState as View
                     if (LegalMoveManager.isLegalMove(this)) {
                         playMove()
@@ -67,28 +51,27 @@ class ChessSquareView : ConstraintLayout {
                     val draggedViewParent = draggedView.parent as ViewGroup
                     val dropTarget = targetView as ViewGroup
                     draggedViewParent.removeView(draggedView)
-                    // remove previous view
-                    for (i in 0 until dropTarget.childCount) {
-                        val child = dropTarget.getChildAt(i)
-                        if (child is ChessPieceView) {
-                            dropTarget.removeView(child)
-                        }
-                    }
-
+                    removeChessPieceViewFrom(dropTarget)
                     dropTarget.addView(draggedView)
-
                     draggedView.visibility = View.INVISIBLE
                     true
                 }
 
                 DragEvent.ACTION_DRAG_ENDED -> {
-                    val draggedView = event.localState as View
-                    draggedView.visibility = View.VISIBLE
-
+                    (event.localState as View).visibility = View.VISIBLE
                     true
                 }
 
                 else -> false
+            }
+        }
+    }
+
+    private fun removeChessPieceViewFrom(parent: ViewGroup) {
+        parent.forEachIndexed { index, child ->
+            if (child is ChessPieceView) {
+                parent.removeViewAt(index)
+                return
             }
         }
     }
@@ -109,22 +92,18 @@ class ChessSquareView : ConstraintLayout {
     }
 
     fun setHighlighted(highlighted: Boolean) {
-        if (isHighlighted != highlighted) {
-            isHighlighted = highlighted
-            this.invalidate()
-        }
+        state = state.copy(isHighlighted = highlighted)
+        invalidate()
     }
 
     fun setLastMove(lastMove: Boolean) {
-        if (isLastMove != lastMove) {
-            isLastMove = lastMove
-            this.invalidate()
-        }
+        state = state.copy(isLastMove = lastMove)
+        invalidate()
     }
 
     fun setLegalMove(legalMove: Boolean) {
-        if (isLegalMove != legalMove) {
-            isLegalMove = legalMove
+        if (state.isLegalMove != legalMove) {
+            state = state.copy(isLegalMove = legalMove)
             if (legalMove) {
                 setOnClickListener {
                     playMove()
@@ -137,37 +116,16 @@ class ChessSquareView : ConstraintLayout {
     }
 
     fun setCheck(check: Boolean) {
-        if (isCheck != check) {
-            isCheck = check
-            this.invalidate()
-        }
+        state = state.copy(isCheck = check)
+        invalidate()
     }
 
     fun getPosition(): Int {
         return position
     }
 
-    fun isHighlighted(): Boolean {
-        return isHighlighted
-    }
-
-    fun isLastMove(): Boolean {
-        return isLastMove
-    }
-
-    fun isLegalMove(): Boolean {
-        return isLegalMove
-    }
-
-    fun isCheck(): Boolean {
-        return isCheck
-    }
-
     fun clear() {
-        isHighlighted = false
-        isLastMove = false
-        isLegalMove = false
-        isCheck = false
+        state = SquareState()
         this.invalidate()
     }
 
@@ -182,19 +140,19 @@ class ChessSquareView : ConstraintLayout {
         val squareSize = measuredWidth.toFloat()
         setBackgroundColor(if ((position / 8 + position % 8) % 2 == 0) Color.WHITE else Color.GRAY)
 
-        if (isHighlighted) {
+        if (state.isHighlighted) {
             paint.color = ResourcesCompat.getColor(resources, R.color.piece_selected_color, null)
             canvas.drawRect(0f, 0f, squareSize, squareSize, paint)
         }
-        if (isLastMove) {
+        if (state.isLastMove) {
             paint.color = ResourcesCompat.getColor(resources, R.color.last_move_color, null)
             canvas.drawRect(0f, 0f, squareSize, squareSize, paint)
         }
-        if (isLegalMove) {
+        if (state.isLegalMove) {
             drawLegalMove(canvas)
         }
-        if (isCheck) {
-            paint.color = Color.RED
+        if (state.isCheck) {
+            paint.color = ResourcesCompat.getColor(resources, R.color.check_color, null)
             canvas.drawRect(0f, 0f, squareSize, squareSize, paint)
         }
     }
@@ -203,8 +161,8 @@ class ChessSquareView : ConstraintLayout {
         val paint = Paint()
         paint.color = ResourcesCompat.getColor(resources, R.color.legal_moves_color, null)
 
-        // Set the stroke style if there's a piece to draw a ring
-        if (square.piece != null) {
+        // Draw a ring if the move captures a piece
+        if (ModelViewRegistry.moveSquareViewMapper.getModelForView(this).captured) {
             paint.style = Paint.Style.STROKE
             paint.strokeWidth = 12f // Adjust the ring thickness here
             canvas.drawCircle(
@@ -227,10 +185,12 @@ class ChessSquareView : ConstraintLayout {
 
     private fun playMove() {
         // Play the move
-        board = board.playMove(DefaultModelViewMapper.moveViewMapper.getModelForView(this))
+        board = board.playMove(ModelViewRegistry.moveSquareViewMapper.getModelForView(this))
+        LastMoveManager.setLastMove(ChessSelectionManager.getSelectedSquare()!!, this)
         // Clear the legal moves
         LegalMoveManager.clearLegalMoves()
         ChessSelectionManager.clearSelection()
-        DefaultModelViewMapper.moveViewMapper.clear()
+        ModelViewRegistry.moveSquareViewMapper.clear()
+        Log.d("ChessSquareView", "Played move: $board")
     }
 }

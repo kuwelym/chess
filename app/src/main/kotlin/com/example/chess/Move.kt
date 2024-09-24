@@ -10,16 +10,17 @@ import com.example.chess.ui.AppData.board
 sealed class Move {
     abstract val piece: Piece
     abstract val dest: Position
+    abstract val captured: Boolean
 }
 
 /** A basic move from one square to another.
  * @param piece the piece making the move
  * @param dest the destination square
- * @param capture whether the move captures a piece
+ * @param captured whether the move captures a piece
  */
-data class BasicMove(override val piece: Piece, override val dest: Position, val capture: Boolean = false) : Move(){
+data class BasicMove(override val piece: Piece, override val dest: Position, override val captured: Boolean = false) : Move(){
     override fun toString(): String {
-        return "${if (piece is Pawn && capture) piece.position.file else ""}${piece.symbol}${if(capture) "x" else ""}${dest.file}${dest.rank}${checkSymbol(board)}"
+        return "${if (piece is Pawn && captured) piece.position.file else ""}${piece.symbol}${if(captured) "x" else ""}${dest.file}${dest.rank}${checkSymbol(board)}"
     }
 
     val isPromotion: Boolean
@@ -29,12 +30,12 @@ data class BasicMove(override val piece: Piece, override val dest: Position, val
 /** A promotion move.
  * @param piece the pawn making the move
  * @param dest the destination square
- * @param capture whether the move captures a piece
+ * @param captured whether the move captures a piece
  * @param promotion the piece to promote to
  */
-data class PromotionMove(override val piece: Piece, override val dest: Position, val capture: Boolean = false, val promotion: Piece) : Move(){
+data class PromotionMove(override val piece: Piece, override val dest: Position, override val captured: Boolean = false, val promotion: Piece) : Move(){
     override fun toString(): String {
-        return "${piece.position.file}${if(capture) "x" else ""}${dest.file}${dest.rank}=${promotion.symbol}${checkSymbol(board)}"
+        return "${piece.position.file}${if(captured) "x" else ""}${dest.file}${dest.rank}=${promotion.symbol}${checkSymbol(board)}"
     }
 }
 
@@ -45,7 +46,7 @@ data class PromotionMove(override val piece: Piece, override val dest: Position,
  * @param rookDest the destination square of the rook
  * @param queenSide whether the move is queenSide castling
  */
-data class CastlingMove(override val piece: Piece, override val dest: Position, val rook: Rook, val rookDest: Position, val queenSide: Boolean) : Move(){
+data class CastlingMove(override val piece: Piece, override val dest: Position, val rook: Rook, val rookDest: Position, val queenSide: Boolean, override val captured: Boolean = false) : Move(){
     override fun toString(): String {
         return "${if(queenSide) "O-O-O" else "O-O"}${checkSymbol(board)}"
     }
@@ -56,7 +57,9 @@ data class CastlingMove(override val piece: Piece, override val dest: Position, 
  * @param dest the destination square
  * @param capture the square of the captured pawn
  */
-data class EnPassantMove(override val piece: Piece, override val dest: Position, val capture: Position) : Move() {
+data class EnPassantMove(override val piece: Piece, override val dest: Position, val capture: Position,
+                         override val captured: Boolean = true
+) : Move() {
     override fun toString(): String {
         return "${piece.position.file}x${dest.file}${dest.rank} e.p.${checkSymbol(board)}"
     }

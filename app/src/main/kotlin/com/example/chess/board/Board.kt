@@ -1,15 +1,12 @@
 package com.example.chess.board
 
 
-import android.util.Log
-import androidx.core.view.children
-import androidx.lifecycle.ViewModel
+import com.example.chess.BasicMove
 import com.example.chess.Bishop
 import com.example.chess.DrawType
 import com.example.chess.GameResult
 import com.example.chess.King
 import com.example.chess.Knight
-import com.example.chess.MainActivity
 import com.example.chess.Move
 import com.example.chess.Pawn
 import com.example.chess.Piece
@@ -18,18 +15,11 @@ import com.example.chess.Queen
 import com.example.chess.Rook
 import com.example.chess.WinType
 import com.example.chess.getImpactedSquares
-import com.example.chess.isCheck
 import com.example.chess.isCheckmate
 import com.example.chess.isStalemate
 import com.example.chess.opponent
 import com.example.chess.ui.AppData
-import com.example.chess.ui.ChessPieceView
-import com.example.chess.ui.DefaultModelViewMapper
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.coroutineScope
-import kotlinx.coroutines.launch
+import com.example.chess.ui.ModelViewRegistry
 import kotlinx.coroutines.runBlocking
 import kotlin.reflect.KClass
 import kotlin.reflect.cast
@@ -59,41 +49,29 @@ class Board {
      */
     val playedMoves: List<Move>
 
+    val bitBoard = BitBoard()
+
     /**
      * Initializes a new board with pieces on their initial positions and the white player
-     * on turn if [setPieces] is true, or an empty board without pieces
+     * on turn if [initializeWithPieces] is true, or an empty board without pieces
      */
-    private constructor(setPieces: Boolean = true) {
+    @OptIn(ExperimentalStdlibApi::class)
+    private constructor(initializeWithPieces: Boolean = true) {
         this.squares = Matrix(8, 8) { row, col ->
-            Position(row, col).let {
-                Square(it, if (setPieces) resolvePiece(it) else null)
-            }
+            val position = Position(row, col)
+            val square = Square(position, if (initializeWithPieces) createPieceAtStartingPosition(position) else null)
+//            square.piece?.let { piece ->
+//                bitBoard.setPiece(piece, position)
+//            }
+            square
         }
         this.currentPlayer = Player.WHITE
         this.previousBoard = null
         this.playedMoves = emptyList()
-
-        CoroutineScope(Dispatchers.IO).launch {
-            generateMovesForBoard(this@Board)
-        }
+        // print the bitboard
+//        Log.d("BitBoard", "White: ${bitBoard.whitePieces.toString(2).padStart(64, '0')}")
+//        Log.d("BitBoard", "Black: ${bitBoard.blackPieces.toString(2).padStart(64, '0')}")
     }
-
-    @OptIn(ExperimentalCoroutinesApi::class)
-    private suspend fun generateMovesForBoard(board: Board) {
-        val dispatcher = Dispatchers.IO.limitedParallelism(Runtime.getRuntime().availableProcessors())
-        coroutineScope {
-            getPieces(board.currentPlayer).forEach { piece ->
-                launch(dispatcher) {
-                    try {
-                        piece.generateMoves(board)
-                    } catch (e: Exception) {
-                        Log.e("Board", "Error generating moves for piece $piece", e)
-                    }
-                }
-            }
-        }
-    }
-
     /**
      * Initializes a new board as a result of updating the [previousBoard] with
      * given [updatedSquares]. If [takeTurns] is true, the players take turns.
@@ -106,7 +84,11 @@ class Board {
     ) {
         this.squares = Matrix(8, 8) { row, col ->
             val position = Position(row, col)
-            updatedSquares[position] ?: previousBoard.getSquare(position)
+            val square = updatedSquares[position] ?: previousBoard.getSquare(position)
+//            square.piece?.let { piece ->
+//                bitBoard.setPiece(piece, position)
+//            }
+            square
         }
         this.currentPlayer =
             if (takeTurns) previousBoard.currentPlayer.opponent() else previousBoard.currentPlayer
@@ -119,7 +101,6 @@ class Board {
      * Plays the given [move] and returns an updated board with the move recorded
      * in the list of played moves. If [takeTurns] is true, the players take turn.
      */
-    @OptIn(ExperimentalCoroutinesApi::class)
     fun playMove(move: Move, takeTurns: Boolean = true): Board {
         val updatedSquares = move.getImpactedSquares()
         val board = Board(
@@ -129,15 +110,8 @@ class Board {
             playedMoves = playedMoves.plus(move)
         )
         if (takeTurns) {
-            board.squares.forEach{
-                Log.d("Board", "Square: ${it.piece}")
-            }
-            DefaultModelViewMapper.pieceViewMapper.onMovePlayed(updatedSquares, board)
-            val dispatcher = Dispatchers.IO.limitedParallelism(Runtime.getRuntime().availableProcessors())
-            CoroutineScope(dispatcher).launch {
-                generateMovesForBoard(board)
-            }
-            AppData.notationViewModel.updatePlayedNotations(board.playedMoves)
+            AppData.notationViewModel.onMovePlayed(updatedSquares, board)
+            ModelViewRegistry.moveSquareViewMapper.onMovePlayed(updatedSquares, board)
         }
         return board
     }
@@ -160,7 +134,7 @@ class Board {
     /**
      * Returns all pieces of given [player] and [type]
      */
-    private fun <T : Piece> getPieces(
+    private fun <T : Piece> getPiecesOfType(
         player: Player = currentPlayer,
         type: KClass<T>
     ): List<T> =
@@ -180,7 +154,7 @@ class Board {
     /**
      * Returns the king of the player on turn
      */
-    fun getKing(): Piece = getPieces(currentPlayer, King::class).first()
+    fun getKing(): Piece = getPiecesOfType(currentPlayer, King::class).first()
 
     /**
      * Returns a [GameResult] describing the current state of this board
@@ -189,8 +163,8 @@ class Board {
         when {
 
             isStalemate() -> GameResult.Draw(DrawType.STALEMATE)
-            isCheckmate() && whiteOnTurn() -> GameResult.BlackWins(WinType.CHECKMATE)
-            isCheckmate() && !whiteOnTurn() -> GameResult.WhiteWins(WinType.CHECKMATE)
+            isCheckmate() && isWhiteTurn() -> GameResult.BlackWins(WinType.CHECKMATE)
+            isCheckmate() && !isWhiteTurn() -> GameResult.WhiteWins(WinType.CHECKMATE)
             else -> GameResult.StillPlaying
         }
     }
@@ -198,7 +172,7 @@ class Board {
     /**
      * Initializes and returns correct piece based on given [position]
      */
-    private fun resolvePiece(position: Position): Piece? {
+    private fun createPieceAtStartingPosition(position: Position): Piece? {
         val player: Player = if (position.row in 0..1) Player.BLACK else Player.WHITE
         return PieceFactory.createPiece(position, player)
     }
@@ -230,7 +204,7 @@ class Board {
         /**
          * Returns a new empty chess board without pieces
          */
-        fun emptyBoard() = Board(setPieces = false)
+        fun emptyBoard() = Board(initializeWithPieces = false)
 
         /**
          * Returns a new chess board with pieces in initial positions
@@ -239,15 +213,111 @@ class Board {
     }
 }
 
+class BitBoard {
+    var whitePieces: ULong = 0UL
+    var blackPieces: ULong = 0UL
+    val pieces: MutableMap<KClass<out Piece>, ULong> = mutableMapOf(
+        King::class to 0UL,
+        Rook::class to 0UL,
+        Bishop::class to 0UL,
+        Queen::class to 0UL,
+        Knight::class to 0UL,
+        Pawn::class to 0UL
+    )
+
+    fun setPiece(piece: Piece, position: Position) {
+        val bit = position.toBit()
+        pieces[piece::class] = pieces[piece::class]!! or bit
+        if (piece.player == Player.WHITE) {
+            whitePieces = whitePieces or bit
+        } else {
+            blackPieces = blackPieces or bit
+        }
+    }
+
+    fun removePiece(piece: Piece, position: Position) {
+        val bit = position.toBit()
+        pieces[piece::class] = pieces[piece::class]!! xor bit
+
+        if (piece.player == Player.WHITE) {
+            whitePieces = whitePieces xor bit
+        } else {
+            blackPieces = blackPieces xor bit
+        }
+    }
+
+    fun isOccupied(position: Position): Boolean {
+        val bit = position.toBit()
+        return (whitePieces or blackPieces) and bit != 0UL
+    }
+
+    fun generateMoves(piece: Piece): Set<Move> {
+        val moves = mutableSetOf<Move>()
+        val position = piece.position
+        val bit = position.toBit()
+
+        // Example for a rook: generate moves in all four directions
+        val directions = listOf(8, -8, 1, -1)
+        for (direction in directions) {
+            var currentBit = bit
+            while (true) {
+                currentBit = currentBit shl direction
+                if (currentBit == 0UL) break
+                val newPosition = currentBit.toPosition()
+                if (!newPosition.isValid) break
+                moves.add(BasicMove(piece, newPosition))
+                if (isOccupied(newPosition)) break
+            }
+        }
+        return moves
+    }
+
+    fun pawnAttacks(piece: Piece): Set<Move> {
+        val moves = mutableSetOf<Move>()
+        val position = piece.position
+        val bit = position.toBit()
+        val direction = if (piece.player == Player.WHITE) -1 else 1
+        val leftAttack = bit shl (8 + direction)
+        val rightAttack = bit shl (8 - direction)
+        if (leftAttack != 0UL) {
+            val leftPosition = leftAttack.toPosition()
+            if (leftPosition.isValid) {
+                moves.add(BasicMove(piece, leftPosition))
+            }
+        }
+        if (rightAttack != 0UL) {
+            val rightPosition = rightAttack.toPosition()
+            if (rightPosition.isValid) {
+                moves.add(BasicMove(piece, rightPosition))
+            }
+        }
+        return moves
+    }
+}
+
+/**
+ * Returns the bit representation of the given [Position]
+ * The bitboard is represented as a 64-bit unsigned integer where each bit represents a square on the board
+ * The least significant bit represents the square a1, the most significant bit represents h8
+ */
+fun Position.toBit() : ULong = 1UL shl ((7 - row) * 8 + col)
+
+fun ULong.toPosition(): Position {
+    val index = this.toString(2).padStart(64, '0').indexOf('1')
+    val row = 7 - index / 8
+    val col = index % 8
+    return Position(row, col)
+}
+
 /**
  * Returns true if the white player is on turn.
  * Convenience method to avoid the long and ugly equality checks everytime.
  */
-fun Board.whiteOnTurn(): Boolean = currentPlayer == Player.WHITE
+fun Board.isWhiteTurn(): Boolean = currentPlayer == Player.WHITE
 
 /**
  * Simulates the given [move] and returns an updated board. Contrary to the [Board.playMove] method,
  * the players do not take turns - the move is only simulated to obtain the board state if
  * the move was played
  */
-fun Board.simulateMove(move: Move): Board = playMove(move, false)
+fun Board.simulateMove(move: Move): Board = playMove(move, takeTurns = false)

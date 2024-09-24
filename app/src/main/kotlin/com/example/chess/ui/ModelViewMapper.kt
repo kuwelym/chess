@@ -9,4 +9,5 @@ interface ModelViewMapper<T, V: View> {
     fun unregister(model: T)
     fun contains(model: T): Boolean
     fun contains(view: V): Boolean
+    fun clear()
 }

@@ -12,7 +12,7 @@ import com.example.chess.board.Square
 import com.example.chess.ui.AppData.board
 import com.example.chess.ui.ChessPieceView
 import com.example.chess.ui.ChessSquareView
-import com.example.chess.ui.DefaultModelViewMapper
+import com.example.chess.ui.ModelViewRegistry
 
 
 class ChessBoardAdapter(
@@ -44,9 +44,9 @@ class ChessBoardAdapter(
         holder.imageView.setSquare(square)
         holder.imageView.setChessBoardAdapter(this)
         holder.imageView.layoutParams = ConstraintLayout.LayoutParams(squareSize, squareSize)
-        square.piece?.let { DefaultModelViewMapper.pieceViewMapper.register(it, holder.imageView) }
+        square.piece?.let { ModelViewRegistry.pieceViewMapper.register(it, holder.imageView) }
 
-        DefaultModelViewMapper.squareViewMapper.register(square, holder.chessCellLayout)
+        ModelViewRegistry.squareViewMapper.register(square, holder.chessCellLayout)
 
         holder.chessCellLayout.setPosition(position)
         holder.chessCellLayout.setSquare(square)
@@ -69,7 +69,7 @@ class ChessBoardAdapter(
         }
 
         if (row == 7) {
-            holder.fileTextView.text = ('a' + col).toString()
+            ('a' + col).toString().also { holder.fileTextView.text = it }
             holder.fileTextView.visibility = View.VISIBLE
         } else {
             holder.fileTextView.visibility = View.GONE
@@ -85,10 +85,10 @@ class ChessBoardAdapter(
         var chessCellLayout: ChessSquareView
 
         init {
-            imageView = view.findViewById(R.id.chess_cell_image) as ChessPieceView
-            rankTextView = view.findViewById(R.id.chess_cell_rank_text) as TextView
-            fileTextView = view.findViewById(R.id.chess_cell_file_text) as TextView
-            chessCellLayout = view.findViewById(R.id.chess_cell_layout) as ChessSquareView
+            view.findViewById<ChessPieceView>(R.id.chess_cell_image)!!.also { imageView = it }
+            view.findViewById<TextView>(R.id.chess_cell_rank_text)!!.also { rankTextView = it }
+            view.findViewById<TextView>(R.id.chess_cell_file_text)!!.also { fileTextView = it }
+            view.findViewById<ChessSquareView>(R.id.chess_cell_layout)!!.also { chessCellLayout = it }
         }
     }
 

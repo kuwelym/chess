@@ -6,11 +6,6 @@ import com.example.chess.board.isOccupiedBy
 import com.example.chess.board.minus
 import com.example.chess.board.plus
 import com.example.chess.board.simulateMove
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.coroutineScope
-import kotlinx.coroutines.launch
-import kotlinx.coroutines.runBlocking
 
 object MovesGenerator {
 
@@ -22,8 +17,7 @@ object MovesGenerator {
             is Rook -> generateMoves(board, piece, 7)
             is Queen -> generateMoves(board, piece, 7)
             is King -> generateMoves(board, piece, 1) + castlingMoves(board, piece)
-        }.filter { !validateForCheck || board.simulateMove(it).isNotCheck() }.toSet()
-
+        }.filter { !validateForCheck || !board.simulateMove(it).isCheck() }.toSet()
 
     private fun pawnMoves(board: Board, piece: Pawn): Set<Move> {
         val direction = piece.rowDirection
@@ -62,13 +56,13 @@ object MovesGenerator {
         if (lastPiece.player == piece.player) return moves
 
         val direction = piece.rowDirection
-        val lastMoveDistance = lastMove.piece.position.row - lastMove.dest.row
+        val lastMoveDistance = (lastMove.piece.position.row - lastMove.dest.row) * direction
         if (lastMoveDistance != 2) return moves
 
-        val left = piece.position + (-1 to direction)
-        val right = piece.position + (1 to direction)
+        val left = piece.position + (0 to -1)
+        val right = piece.position + (0 to 1)
         if (lastMove.dest == left || lastMove.dest == right) {
-            moves += EnPassantMove(piece, lastMove.dest + (0 to -direction), lastMove.dest)
+            moves += EnPassantMove(piece, lastMove.dest + (direction to 0), lastMove.dest)
         }
 
         return moves
@@ -86,7 +80,7 @@ object MovesGenerator {
 
             return (1..steps).all { offset ->
                 val position = kingPosition + (0 to offset * direction)
-                board.getSquareOrNull(position)?.isEmpty == true && runBlocking { !position.isUnderAttack(board) }
+                board.getSquareOrNull(position)?.isEmpty == true
             }
         }
 
@@ -154,4 +148,5 @@ object MovesGenerator {
         }
         return piece.moves.flatMap { generateMoveRecursively(it, 1) }.toSet()
     }
+
 }

@@ -10,8 +10,6 @@ object ChessSelectionManager {
     fun selectSquare(square: ChessSquareView) {
         // Deselect the previously selected square, if any
         clearSelection()
-        DefaultModelViewMapper.moveViewMapper.clear()
-        LegalMoveManager.clearLegalMoves()
 
         // Select the new square
         selectedSquare = square
@@ -25,6 +23,8 @@ object ChessSelectionManager {
     fun clearSelection() {
         selectedSquare?.setHighlighted(false)
         selectedSquare = null
+        ModelViewRegistry.moveSquareViewMapper.clear()
+        LegalMoveManager.clearLegalMoves()
     }
 
     /**

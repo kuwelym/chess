@@ -5,4 +5,5 @@
     <color name="legal_moves_color">#33000000</color>
     <color name="piece_selected_color">#80E5FF00</color>
     <color name="last_move_color">#80FF9900</color>
+    <color name="check_color">#80FF0000</color>
 </resources>

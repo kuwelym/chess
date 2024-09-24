@@ -4,24 +4,24 @@ import android.util.Log
 import com.example.chess.ui.AppData.board
 
 object LegalMoveManager {
-    private var legalSquares: Set<ChessSquareView> = emptySet()
+    private var legalSquares: MutableSet<ChessSquareView> = mutableSetOf()
 
     /**
      * Sets the legal moves for the current piece.
      */
     fun setLegalMoves() {
         val piece = ChessSelectionManager.getSelectedSquare()?.getSquare()?.piece
-        val legalMoves = piece?.lastGeneratedMoves
-        Log.d("LegalMoveManager", "Legal moves: $legalMoves")
+        val startTime = System.currentTimeMillis()
+        val legalMoves = piece?.generateMoves(board)
+        val endTime = System.currentTimeMillis()
+        Log.d("LegalMoveManager", "Time to generate moves: ${endTime - startTime}ms")
         legalMoves?.forEach { move ->
             val targetSquare = board.getSquare(move.dest)
-            Log.d("LegalMoveManager", "Target square: $targetSquare")
-            val targetSquareView = DefaultModelViewMapper.squareViewMapper.getViewForModel(targetSquare)
-            Log.d("LegalMoveManager", "Target square view: $targetSquareView")
-            legalSquares += targetSquareView
+            val targetSquareView = ModelViewRegistry.squareViewMapper.getViewForModel(targetSquare)
+            legalSquares.add(targetSquareView)
             targetSquareView.setLegalMove(true)
 
-            DefaultModelViewMapper.moveViewMapper.register(move, targetSquareView)
+            ModelViewRegistry.moveSquareViewMapper.register(move, targetSquareView)
         }
     }
 
@@ -37,6 +37,6 @@ object LegalMoveManager {
      */
     fun clearLegalMoves() {
         legalSquares.forEach { it.setLegalMove(false) }
-        legalSquares = emptySet()
+        legalSquares.clear()
     }
 }

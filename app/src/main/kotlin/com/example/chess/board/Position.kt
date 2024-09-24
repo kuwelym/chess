@@ -35,3 +35,4 @@ operator fun Position.minus(other: Pair<Int, Int>): Position {
 operator fun Position.times(value: Int): Position {
     return Position(row * value, col * value)
 }
+

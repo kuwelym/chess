@@ -1,17 +1,7 @@
 package com.example.chess
 
-import android.util.Log
 import com.example.chess.board.Board
 import com.example.chess.board.Position
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Deferred
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.async
-import kotlinx.coroutines.ensureActive
-import kotlinx.coroutines.withContext
-import kotlinx.coroutines.yield
 
 sealed class Piece {
     // The player who owns the piece
@@ -34,23 +24,19 @@ sealed class Piece {
         return name
     }
 
-    val lastGeneratedMoves = mutableSetOf<Move>()
+//    val lastGeneratedMoves = mutableSetOf<Move>()
 
-    @OptIn(ExperimentalCoroutinesApi::class)
-    fun generateMoves(board: Board, validateForCheck: Boolean = true): Deferred<Set<Move>> {
-        val dispatcher = Dispatchers.IO.limitedParallelism(Runtime.getRuntime().availableProcessors())
-        return CoroutineScope(dispatcher).async {
-            val generatedMoves =
-                moves.flatMap { MovesGenerator.generate(board, this@Piece, validateForCheck) }
-                    .toSet()
+    fun generateMoves(board: Board, validateForCheck: Boolean = true) : Set<Move> {
+        val generatedMoves =
+        moves.flatMap { MovesGenerator.generate(board, this@Piece, validateForCheck) }
+            .toSet()
 
-            synchronized(lastGeneratedMoves) {
-                lastGeneratedMoves.clear()
-                lastGeneratedMoves.addAll(generatedMoves)
-            }
-            generatedMoves
-        }
+//        lastGeneratedMoves.clear()
+//        lastGeneratedMoves.addAll(generatedMoves)
+
+        return generatedMoves
     }
+
 }
 
 val Piece.imageResource: Int
