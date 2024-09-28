@@ -1,6 +1,6 @@
 package com.example.chess.ui
 
-import com.example.chess.isUnderAttack
+import com.example.chess.isCheckBitboard
 import com.example.chess.ui.AppData.board
 
 object KingCheckManager {
@@ -8,8 +8,8 @@ object KingCheckManager {
 
     fun setKingCheck() {
         clearKingCheck()
-        val king = board.getKing()
-        if (king.isUnderAttack(board)){
+
+        if (board.isCheckBitboard()){
             kingCheckSquare = ModelViewRegistry.squareViewMapper.getViewForModel(board.getSquare(board.getKing().position))
             kingCheckSquare?.setCheck(true)
         }

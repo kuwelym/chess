@@ -4,6 +4,7 @@ import com.example.chess.board.BitBoard
 import com.example.chess.board.Board
 import com.example.chess.board.Position
 import com.example.chess.board.Square
+import com.example.chess.board.toPosition
 
 /**
  * Returns true if the given [Position] is under attack by the opponent's pieces on the given [board].
@@ -13,16 +14,27 @@ fun Position.isUnderAttack(board: Board) = board.getPieces(board.currentPlayer.o
     .filterIsInstance<BasicMove>()
     .any { it.dest == this }
 
-private fun BitBoard.isKingInCheck(player: Player): Boolean {
+private fun BitBoard.isKingInCheck(board: Board): Boolean {
     val kings = pieces[King::class]!!
-    val kingBitboard = if (player == Player.WHITE) kings and whitePieces else kings and blackPieces
-    val opponentPieces = if (player == Player.WHITE) blackPieces else whitePieces
+    val kingBitboard = if (board.currentPlayer == Player.WHITE) kings and whitePieces else kings and blackPieces
+
+    val kingBitBoardPosition = kingBitboard.toPosition()
 
     // Check if any opponent piece can attack the king
     // This method should use bitboard operations to determine if the king is in check
 
+    val isAttackedByPawn = isAttackedByPawn(kingBitBoardPosition, board)
+    val isAttackedByKnight = isAttackedByKnight(kingBitBoardPosition, board)
+    val isAttackedByRook = isAttackedByRook(kingBitBoardPosition, board)
+    val isAttackedByBishop = isAttackedByBishop(kingBitBoardPosition, board)
+    val isAttackedByQueen = isAttackedByQueen(kingBitBoardPosition, board)
 
-    return false // Placeholder, implement actual check logic
+    return isAttackedByPawn || isAttackedByKnight || isAttackedByRook || isAttackedByBishop || isAttackedByQueen
+}
+
+fun isUnderAttackBitboard(board: Board): Boolean {
+    val bitboard = board.bitBoard
+    return bitboard.isKingInCheck(board)
 }
 
 /**
@@ -39,6 +51,11 @@ fun Piece.isUnderAttack(board: Board) = position.isUnderAttack(board)
  * Returns true if the king of the player on turn is in check
  */
 fun Board.isCheck() = getKing().position.isUnderAttack(this@isCheck)
+
+/**
+ * Returns true if the king of the player on turn is in check, using bitboard operations
+ */
+fun Board.isCheckBitboard() = isUnderAttackBitboard(this)
 
 /**
  * Returns true if the king of the player on turn is in check

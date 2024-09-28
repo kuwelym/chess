@@ -1,6 +1,7 @@
 package com.example.chess.board
 
 
+import android.util.Log
 import com.example.chess.BasicMove
 import com.example.chess.Bishop
 import com.example.chess.DrawType
@@ -59,19 +60,23 @@ class Board {
     private constructor(initializeWithPieces: Boolean = true) {
         this.squares = Matrix(8, 8) { row, col ->
             val position = Position(row, col)
-            val square = Square(position, if (initializeWithPieces) createPieceAtStartingPosition(position) else null)
-//            square.piece?.let { piece ->
-//                bitBoard.setPiece(piece, position)
-//            }
+            val square = Square(
+                position,
+                if (initializeWithPieces) createPieceAtStartingPosition(position) else null
+            )
+            square.piece?.let { piece ->
+                bitBoard.setPiece(piece, position)
+            }
             square
         }
         this.currentPlayer = Player.WHITE
         this.previousBoard = null
         this.playedMoves = emptyList()
         // print the bitboard
-//        Log.d("BitBoard", "White: ${bitBoard.whitePieces.toString(2).padStart(64, '0')}")
-//        Log.d("BitBoard", "Black: ${bitBoard.blackPieces.toString(2).padStart(64, '0')}")
+        Log.d("BitBoard", "White: ${bitBoard.whitePieces.toBitString()}")
+        Log.d("BitBoard", "Black: ${bitBoard.blackPieces.toBitString()}")
     }
+
     /**
      * Initializes a new board as a result of updating the [previousBoard] with
      * given [updatedSquares]. If [takeTurns] is true, the players take turns.
@@ -85,9 +90,9 @@ class Board {
         this.squares = Matrix(8, 8) { row, col ->
             val position = Position(row, col)
             val square = updatedSquares[position] ?: previousBoard.getSquare(position)
-//            square.piece?.let { piece ->
-//                bitBoard.setPiece(piece, position)
-//            }
+            square.piece?.let { piece ->
+                bitBoard.setPiece(piece, position)
+            }
             square
         }
         this.currentPlayer =
@@ -173,7 +178,7 @@ class Board {
      * Initializes and returns correct piece based on given [position]
      */
     private fun createPieceAtStartingPosition(position: Position): Piece? {
-        val player: Player = if (position.row in 0..1) Player.BLACK else Player.WHITE
+        val player: Player = if (position.row in 0..1) Player.WHITE else Player.BLACK
         return PieceFactory.createPiece(position, player)
     }
 
@@ -246,7 +251,7 @@ class BitBoard {
         }
     }
 
-    fun isOccupied(position: Position): Boolean {
+    private fun isOccupied(position: Position): Boolean {
         val bit = position.toBit()
         return (whitePieces or blackPieces) and bit != 0UL
     }
@@ -272,27 +277,112 @@ class BitBoard {
         return moves
     }
 
-    fun pawnAttacks(piece: Piece): Set<Move> {
-        val moves = mutableSetOf<Move>()
-        val position = piece.position
+    fun isAttackedByPawn(position: Position, board: Board): Boolean {
         val bit = position.toBit()
-        val direction = if (piece.player == Player.WHITE) -1 else 1
-        val leftAttack = bit shl (8 + direction)
-        val rightAttack = bit shl (8 - direction)
-        if (leftAttack != 0UL) {
-            val leftPosition = leftAttack.toPosition()
-            if (leftPosition.isValid) {
-                moves.add(BasicMove(piece, leftPosition))
-            }
-        }
-        if (rightAttack != 0UL) {
-            val rightPosition = rightAttack.toPosition()
-            if (rightPosition.isValid) {
-                moves.add(BasicMove(piece, rightPosition))
-            }
-        }
-        return moves
+        val direction = if (board.isWhiteTurn()) 1 else -1
+        val leftAttack = bit shr (8 + direction)
+        val rightAttack = bit shr (8 - direction)
+        val opponentPawns =
+            if (board.isWhiteTurn()) blackPieces and pieces[Pawn::class]!! else whitePieces and pieces[Pawn::class]!!
+        return (leftAttack and opponentPawns != 0UL) || (rightAttack and opponentPawns != 0UL)
     }
+
+    fun isAttackedByKnight(position: Position, board: Board): Boolean {
+        val bit = position.toBit()
+        val knightMoves = listOf(
+            6, 10, 15, 17, -6, -10, -15, -17
+        )
+        val opponentKnights =
+            if (board.isWhiteTurn()) blackPieces and pieces[Knight::class]!! else whitePieces and pieces[Knight::class]!!
+        return knightMoves.any {
+
+            val newPosition = if (it > 0) {
+                bit shl it
+            } else {
+                bit shr -it
+            }
+            if (!newPosition.toPosition().isValid) return@any false
+            opponentKnights and newPosition != 0UL
+        }
+    }
+
+    fun isAttackedByBishop(position: Position, board: Board): Boolean {
+        val bit = position.toBit()
+        val directions = listOf(7, 9, -7, -9)
+        val opponentBishops =
+            if (board.isWhiteTurn()) blackPieces and pieces[Bishop::class]!! else whitePieces and pieces[Bishop::class]!!
+        for (direction in directions) {
+            var currentBit = bit
+            while (true) {
+                // shl if direction is positive, shr if direction is negative
+                currentBit = if (direction > 0) {
+                    currentBit shl direction
+                } else {
+                    currentBit shr -direction
+                }
+                if (currentBit == 0UL) break
+                val newPosition = currentBit.toPosition()
+                if (!newPosition.isValid) break
+                if (opponentBishops and currentBit != 0UL) return true
+                if (isOccupied(newPosition)) break
+            }
+        }
+        return false
+    }
+
+    fun isAttackedByRook(position: Position, board: Board): Boolean {
+        val bit = position.toBit()
+        val directions = listOf(8, -8, 1, -1)
+        val opponentRooks =
+            if (board.isWhiteTurn()) blackPieces and pieces[Rook::class]!! else whitePieces and pieces[Rook::class]!!
+        for (direction in directions) {
+            var currentBit = bit
+            while (true) {
+                currentBit = if (direction > 0) {
+                    currentBit shl direction
+                } else {
+                    currentBit shr -direction
+                }
+                if (currentBit == 0UL) break
+                val newPosition = currentBit.toPosition()
+                if (!newPosition.isValid) break
+                if (opponentRooks and currentBit != 0UL) return true
+                if (isOccupied(newPosition)) break
+            }
+        }
+        return false
+    }
+
+    fun isAttackedByQueen(position: Position, board: Board): Boolean {
+        val bit = position.toBit()
+        val directions = listOf(8, -8, 1, -1, 7, 9, -7, -9)
+        val opponentQueens =
+            if (board.isWhiteTurn()) blackPieces and pieces[Queen::class]!! else whitePieces and pieces[Queen::class]!!
+        for (direction in directions) {
+            var currentBit = bit
+            while (true) {
+                currentBit = if (direction > 0) {
+                    currentBit shl direction
+                } else {
+                    currentBit shr -direction
+                }
+                if (currentBit == 0UL) break
+                val newPosition = currentBit.toPosition()
+                if (!newPosition.isValid) break
+                if (opponentQueens and currentBit != 0UL) return true
+                if (isOccupied(newPosition)) break
+            }
+        }
+        return false
+    }
+}
+
+fun ULong.toBitString(): String {
+    return this.toString(2).padStart(64, '0')
+}
+
+fun Position.toBitString(): String {
+    return this.toBit().toBitString()
 }
 
 /**
@@ -300,11 +390,13 @@ class BitBoard {
  * The bitboard is represented as a 64-bit unsigned integer where each bit represents a square on the board
  * The least significant bit represents the square a1, the most significant bit represents h8
  */
-fun Position.toBit() : ULong = 1UL shl ((7 - row) * 8 + col)
+fun Position.toBit(): ULong = 1UL shl (row * 8 + col)
+// ((7 - row) * 8 + col)
 
 fun ULong.toPosition(): Position {
-    val index = this.toString(2).padStart(64, '0').indexOf('1')
-    val row = 7 - index / 8
+    // get index from right to left
+    val index = this.toString(2).reversed().indexOf('1')
+    val row = index / 8
     val col = index % 8
     return Position(row, col)
 }

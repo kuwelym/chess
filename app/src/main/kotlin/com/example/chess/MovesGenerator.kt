@@ -17,7 +17,7 @@ object MovesGenerator {
             is Rook -> generateMoves(board, piece, 7)
             is Queen -> generateMoves(board, piece, 7)
             is King -> generateMoves(board, piece, 1) + castlingMoves(board, piece)
-        }.filter { !validateForCheck || !board.simulateMove(it).isCheck() }.toSet()
+        }.filter { !validateForCheck || !board.simulateMove(it).isCheckBitboard() }.toSet()
 
     private fun pawnMoves(board: Board, piece: Pawn): Set<Move> {
         val direction = piece.rowDirection

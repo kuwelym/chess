@@ -8,6 +8,7 @@ import com.example.chess.Move
 import com.example.chess.board.Board
 import com.example.chess.board.MovePair
 import com.example.chess.board.Square
+import com.example.chess.board.toBitString
 import com.example.chess.ui.AppData
 import com.example.chess.ui.BoardObserver
 
@@ -16,13 +17,22 @@ class NotationViewModel: ViewModel(), BoardObserver {
     val playedNotations: LiveData<List<MovePair>>
         get() = _playedNotations
 
+    private val _selectedPieceBit = MutableLiveData<String>()
+    val selectedPieceBit: LiveData<String>
+        get() = _selectedPieceBit
+
     init {
         _playedNotations.value = convertToMovePairs(AppData.board.playedMoves)
+        _selectedPieceBit.value = ""
     }
 
     override fun onMovePlayed(updatedSquares: List<Square>, board: Board) {
         _playedNotations.value = convertToMovePairs(board.playedMoves)
         Log.d("NotationViewModel", "onMovePlayed: ${_playedNotations.value}")
+    }
+
+    fun onSquareSelected(square: Square) {
+        _selectedPieceBit.value = square.position.toBitString()
     }
 
     private fun convertToMovePairs(moves: List<Move>): List<MovePair> {

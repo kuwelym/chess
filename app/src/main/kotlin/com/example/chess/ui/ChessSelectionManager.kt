@@ -13,6 +13,7 @@ object ChessSelectionManager {
 
         // Select the new square
         selectedSquare = square
+        AppData.notationViewModel.onSquareSelected(square.getSquare())
         square.setHighlighted(true)
         LegalMoveManager.setLegalMoves()
     }

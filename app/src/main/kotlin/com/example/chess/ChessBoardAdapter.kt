@@ -33,9 +33,7 @@ class ChessBoardAdapter(
 
     private fun getItem(position: Int): Square {
         // position is from 0 to 63
-        val row = position / 8
-        val col = position % 8
-        return board.getSquare(Position(row, col))
+        return board.getSquare(Position(position / 8, position % 8))
     }
 
 
@@ -61,19 +59,11 @@ class ChessBoardAdapter(
         holder.fileTextView.setTextSize(TypedValue.COMPLEX_UNIT_PX, textSize)
 
         // number the ranks at the top left corner of the cell and the files at the bottom right corner, only for the first row and column
-        if (col == 0) {
-            holder.rankTextView.text = (8 - row).toString()
-            holder.rankTextView.visibility = View.VISIBLE
-        } else {
-            holder.rankTextView.visibility = View.GONE
-        }
+        holder.rankTextView.text = if (col == 0) (8 - row).toString() else ""
+        holder.rankTextView.visibility = if (col == 0) View.VISIBLE else View.GONE
 
-        if (row == 7) {
-            ('a' + col).toString().also { holder.fileTextView.text = it }
-            holder.fileTextView.visibility = View.VISIBLE
-        } else {
-            holder.fileTextView.visibility = View.GONE
-        }
+        holder.fileTextView.text = if (row == 7) ('a' + col).toString() else ""
+        holder.fileTextView.visibility = if (row == 7) View.VISIBLE else View.GONE
 
 
     }

@@ -65,7 +65,7 @@ data class Pawn(
         get() = if (player == Player.WHITE) setOf(0 to 1) else setOf(0 to -1)
 
     val rowDirection: Int
-        get() = if (player == Player.WHITE) -1 else 1
+        get() = if (player == Player.WHITE) 1 else -1
 }
 
 data class Rook(
