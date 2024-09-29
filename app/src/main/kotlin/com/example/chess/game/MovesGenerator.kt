@@ -1,4 +1,4 @@
-package com.example.chess
+package com.example.chess.game
 
 import com.example.chess.board.BitBoard
 import com.example.chess.board.Board
@@ -7,7 +7,21 @@ import com.example.chess.board.plus
 import com.example.chess.board.simulateMove
 import com.example.chess.board.toBit
 import com.example.chess.board.toPosition
-import com.example.chess.ui.AppData
+import com.example.chess.model.BasicMove
+import com.example.chess.model.Bishop
+import com.example.chess.model.CastlingMove
+import com.example.chess.model.Direction
+import com.example.chess.model.EnPassantMove
+import com.example.chess.model.King
+import com.example.chess.model.Knight
+import com.example.chess.model.Move
+import com.example.chess.model.Pawn
+import com.example.chess.model.Piece
+import com.example.chess.model.Player
+import com.example.chess.model.Queen
+import com.example.chess.model.Rook
+import com.example.chess.model.times
+import com.example.chess.AppData
 
 object MovesGenerator {
 

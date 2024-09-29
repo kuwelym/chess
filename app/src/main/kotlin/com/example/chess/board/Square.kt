@@ -1,7 +1,7 @@
 package com.example.chess.board
 
-import com.example.chess.Piece
-import com.example.chess.Player
+import com.example.chess.model.Piece
+import com.example.chess.model.Player
 
 /** A square is a cell on the chessboard.
  * @param position The position of the square on the board.

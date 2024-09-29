@@ -1,11 +1,13 @@
-package com.example.chess.ui
+package com.example.chess.ui.manager
 
 import android.view.View
 import androidx.core.view.children
-import com.example.chess.Move
-import com.example.chess.Piece
+import com.example.chess.model.Move
+import com.example.chess.model.Piece
 import com.example.chess.board.Board
 import com.example.chess.board.Square
+import com.example.chess.ui.view.ChessPieceView
+import com.example.chess.ui.view.ChessSquareView
 
 interface BoardObserver {
     fun onMovePlayed(updatedSquares: List<Square>, board: Board)

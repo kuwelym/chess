@@ -1,8 +1,9 @@
-package com.example.chess.ui
+package com.example.chess.ui.manager
 
-import com.example.chess.isCheckBitboard
-import com.example.chess.isCheckmateBitboard
-import com.example.chess.ui.AppData.board
+import com.example.chess.game.isCheckBitboard
+import com.example.chess.game.isCheckmateBitboard
+import com.example.chess.AppData.board
+import com.example.chess.ui.view.ChessSquareView
 
 object KingCheckManager {
     private var checkedKingSquare: ChessSquareView? = null

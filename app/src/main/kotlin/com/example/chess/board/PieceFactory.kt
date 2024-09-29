@@ -1,13 +1,13 @@
 package com.example.chess.board
 
-import com.example.chess.Bishop
-import com.example.chess.King
-import com.example.chess.Knight
-import com.example.chess.Pawn
-import com.example.chess.Piece
-import com.example.chess.Player
-import com.example.chess.Queen
-import com.example.chess.Rook
+import com.example.chess.model.Bishop
+import com.example.chess.model.King
+import com.example.chess.model.Knight
+import com.example.chess.model.Pawn
+import com.example.chess.model.Piece
+import com.example.chess.model.Player
+import com.example.chess.model.Queen
+import com.example.chess.model.Rook
 
 object PieceFactory {
     fun createPiece(position: Position, player: Player): Piece? {

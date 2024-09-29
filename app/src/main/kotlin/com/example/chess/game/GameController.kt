@@ -1,11 +1,11 @@
-package com.example.chess
+package com.example.chess.game
 
-import com.example.chess.ui.AppData.board
-import com.example.chess.ui.ChessSelectionManager
-import com.example.chess.ui.ChessSquareView
-import com.example.chess.ui.LastMoveManager
-import com.example.chess.ui.LegalMoveManager
-import com.example.chess.ui.ModelViewRegistry
+import com.example.chess.AppData.board
+import com.example.chess.ui.manager.ChessSelectionManager
+import com.example.chess.ui.view.ChessSquareView
+import com.example.chess.ui.manager.LastMoveManager
+import com.example.chess.ui.manager.LegalMoveManager
+import com.example.chess.ui.manager.ModelViewRegistry
 
 object GameController {
     fun playMove(squareView: ChessSquareView) {

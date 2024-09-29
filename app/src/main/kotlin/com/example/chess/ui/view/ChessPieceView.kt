@@ -1,14 +1,16 @@
-package com.example.chess.ui
+package com.example.chess.ui.view
 
 import android.content.ClipData
 import android.content.Context
 import android.util.AttributeSet
 import android.view.MotionEvent
 import androidx.appcompat.widget.AppCompatImageView
-import com.example.chess.ChessBoardAdapter
+import com.example.chess.adapter.ChessBoardAdapter
 import com.example.chess.board.Square
-import com.example.chess.imageResource
-import com.example.chess.ui.AppData.board
+import com.example.chess.model.imageResource
+import com.example.chess.AppData.board
+import com.example.chess.ui.manager.ChessSelectionManager
+import com.example.chess.ui.manager.ModelViewRegistry
 import kotlin.math.pow
 import kotlin.math.sqrt
 

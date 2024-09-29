@@ -1,4 +1,6 @@
-package com.example.chess.ui
+package com.example.chess.ui.manager
+
+import com.example.chess.ui.view.ChessSquareView
 
 object ChessSelectionManager {
     private var selectedSquare: ChessSquareView? = null

@@ -1,6 +1,7 @@
-package com.example.chess.ui
+package com.example.chess.ui.manager
 
-import com.example.chess.ui.AppData.board
+import com.example.chess.AppData.board
+import com.example.chess.ui.view.ChessSquareView
 
 object LegalMoveManager {
     private var legalSquares: MutableSet<ChessSquareView> = mutableSetOf()

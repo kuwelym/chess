@@ -1,10 +1,10 @@
-package com.example.chess.ui
+package com.example.chess.ui.view
 
 import android.content.Context
 import android.util.AttributeSet
 import androidx.recyclerview.widget.GridLayoutManager
 import androidx.recyclerview.widget.RecyclerView
-import com.example.chess.ChessBoardAdapter
+import com.example.chess.adapter.ChessBoardAdapter
 
 class ChessGridView: RecyclerView {
 

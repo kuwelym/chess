@@ -1,4 +1,4 @@
-package com.example.chess
+package com.example.chess.game
 
 /**
  * The result of the game, either a win, draw, or unknown if the game is still being played.

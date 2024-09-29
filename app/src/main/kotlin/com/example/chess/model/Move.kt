@@ -1,8 +1,8 @@
-package com.example.chess
+package com.example.chess.model
 
 import com.example.chess.board.Position
 import com.example.chess.board.Square
-import com.example.chess.ui.AppData.board
+import com.example.chess.AppData.board
 
 /** Abstract class representing a move in a chess game.
  * Including basic move, castling, promotion, en passant, etc.

@@ -1,4 +1,4 @@
-package com.example.chess
+package com.example.chess.game
 
 import com.example.chess.board.BitBoard
 import com.example.chess.board.Board
@@ -7,6 +7,16 @@ import com.example.chess.board.Square
 import com.example.chess.board.isWhiteTurn
 import com.example.chess.board.toBit
 import com.example.chess.board.toPosition
+import com.example.chess.model.BasicMove
+import com.example.chess.model.Bishop
+import com.example.chess.model.King
+import com.example.chess.model.Knight
+import com.example.chess.model.Pawn
+import com.example.chess.model.Piece
+import com.example.chess.model.Player
+import com.example.chess.model.Queen
+import com.example.chess.model.Rook
+import com.example.chess.model.opponent
 
 /**
  * Returns true if the given [Position] is under attack by the opponent's pieces on the given [board].

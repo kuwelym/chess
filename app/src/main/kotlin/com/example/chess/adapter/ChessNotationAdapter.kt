@@ -1,4 +1,4 @@
-package com.example.chess
+package com.example.chess.adapter
 
 import android.view.LayoutInflater
 import android.view.ViewGroup
@@ -9,7 +9,9 @@ import androidx.recyclerview.widget.RecyclerView
 import com.example.chess.board.MovePair
 import com.example.chess.databinding.NotationCellBinding
 
-class ChessNotationAdapter : ListAdapter<MovePair, ChessNotationAdapter.NotationViewHolder>(MovePairDiffCallback()) {
+class ChessNotationAdapter : ListAdapter<MovePair, ChessNotationAdapter.NotationViewHolder>(
+    MovePairDiffCallback()
+) {
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): NotationViewHolder {
         val binding = NotationCellBinding.inflate(LayoutInflater.from(parent.context), parent, false)

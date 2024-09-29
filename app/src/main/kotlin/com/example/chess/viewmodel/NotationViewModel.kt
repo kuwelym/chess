@@ -3,12 +3,12 @@ package com.example.chess.viewmodel
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
-import com.example.chess.Move
+import com.example.chess.model.Move
 import com.example.chess.board.Board
 import com.example.chess.board.MovePair
 import com.example.chess.board.Square
-import com.example.chess.ui.AppData
-import com.example.chess.ui.BoardObserver
+import com.example.chess.AppData
+import com.example.chess.ui.manager.BoardObserver
 
 class NotationViewModel: ViewModel(), BoardObserver {
     private val _playedNotations = MutableLiveData<List<MovePair>>()

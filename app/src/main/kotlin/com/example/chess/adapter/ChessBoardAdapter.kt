@@ -1,4 +1,4 @@
-package com.example.chess
+package com.example.chess.adapter
 
 import android.content.Context
 import android.util.TypedValue
@@ -7,12 +7,13 @@ import android.view.ViewGroup
 import android.widget.TextView
 import androidx.constraintlayout.widget.ConstraintLayout
 import androidx.recyclerview.widget.RecyclerView
+import com.example.chess.R
 import com.example.chess.board.Position
 import com.example.chess.board.Square
-import com.example.chess.ui.AppData.board
-import com.example.chess.ui.ChessPieceView
-import com.example.chess.ui.ChessSquareView
-import com.example.chess.ui.ModelViewRegistry
+import com.example.chess.AppData.board
+import com.example.chess.ui.view.ChessPieceView
+import com.example.chess.ui.view.ChessSquareView
+import com.example.chess.ui.manager.ModelViewRegistry
 
 
 class ChessBoardAdapter(

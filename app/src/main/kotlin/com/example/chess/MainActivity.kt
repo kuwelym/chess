@@ -5,9 +5,9 @@ import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import androidx.databinding.DataBindingUtil
 import androidx.recyclerview.widget.RecyclerView
+import com.example.chess.adapter.ChessNotationAdapter
 import com.example.chess.databinding.ActivityMainBinding
 import com.example.chess.factory.NotationViewModelFactory
-import com.example.chess.ui.AppData
 import com.example.chess.viewmodel.NotationViewModel
 
 class MainActivity : AppCompatActivity() {

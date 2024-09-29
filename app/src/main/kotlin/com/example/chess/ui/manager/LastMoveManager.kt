@@ -1,4 +1,6 @@
-package com.example.chess.ui
+package com.example.chess.ui.manager
+
+import com.example.chess.ui.view.ChessSquareView
 
 object LastMoveManager {
     private var lastMoveSquareViews: Pair<ChessSquareView, ChessSquareView>? = null

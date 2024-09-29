@@ -1,5 +1,7 @@
-package com.example.chess
+package com.example.chess.model
 
+import com.example.chess.game.MovesGenerator
+import com.example.chess.R
 import com.example.chess.board.Board
 import com.example.chess.board.Position
 

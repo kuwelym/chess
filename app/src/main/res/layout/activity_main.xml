@@ -25,7 +25,7 @@
 
         </androidx.recyclerview.widget.RecyclerView>
 
-        <com.example.chess.ui.ChessGridView
+        <com.example.chess.ui.view.ChessGridView
             android:id="@+id/chessboard"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"

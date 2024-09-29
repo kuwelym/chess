@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<com.example.chess.ui.ChessSquareView
+<com.example.chess.ui.view.ChessSquareView
     android:id="@+id/chess_cell_layout"
     xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="wrap_content"
@@ -7,14 +7,14 @@
     android:background="@android:color/transparent"
     xmlns:app="http://schemas.android.com/apk/res-auto">
 
-    <com.example.chess.ui.ChessPieceView
+    <com.example.chess.ui.view.ChessPieceView
         android:id="@+id/chess_cell_image"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent">
 
-    </com.example.chess.ui.ChessPieceView>
+    </com.example.chess.ui.view.ChessPieceView>
 
     <TextView
         android:id="@+id/chess_cell_rank_text"
@@ -42,4 +42,4 @@
 
     </TextView>
 
-</com.example.chess.ui.ChessSquareView>
+</com.example.chess.ui.view.ChessSquareView>

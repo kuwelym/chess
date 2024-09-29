@@ -1,4 +1,4 @@
-package com.example.chess.ui
+package com.example.chess
 
 import com.example.chess.board.Board
 import com.example.chess.viewmodel.NotationViewModel

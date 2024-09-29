@@ -1,4 +1,4 @@
-package com.example.chess.ui
+package com.example.chess.ui.manager
 
 import android.view.View
 

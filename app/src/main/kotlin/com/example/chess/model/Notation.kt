@@ -1,6 +1,7 @@
-package com.example.chess
+package com.example.chess.model
 
 import com.example.chess.board.Board
+import com.example.chess.game.isCheck
 
 // Algebraic notation is a standard way to identify each square on the chessboard.
 enum class PieceNotationType{

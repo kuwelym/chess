@@ -1,4 +1,4 @@
-package com.example.chess.ui
+package com.example.chess.ui.view
 
 import android.content.ClipDescription
 import android.content.Context
@@ -9,9 +9,11 @@ import android.view.DragEvent
 import android.view.View
 import androidx.constraintlayout.widget.ConstraintLayout
 import androidx.core.content.res.ResourcesCompat
-import com.example.chess.GameController
+import com.example.chess.game.GameController
 import com.example.chess.R
 import com.example.chess.board.Square
+import com.example.chess.ui.manager.LegalMoveManager
+import com.example.chess.ui.manager.ModelViewRegistry
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow

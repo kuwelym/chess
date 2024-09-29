@@ -1,4 +1,4 @@
-package com.example.chess
+package com.example.chess.model
 
 enum class Player {
     WHITE,
