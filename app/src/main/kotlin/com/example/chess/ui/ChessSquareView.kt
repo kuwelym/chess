@@ -7,10 +7,8 @@ import android.graphics.Paint
 import android.util.AttributeSet
 import android.view.DragEvent
 import android.view.View
-import android.view.ViewGroup
 import androidx.constraintlayout.widget.ConstraintLayout
 import androidx.core.content.res.ResourcesCompat
-import androidx.core.view.children
 import com.example.chess.GameController
 import com.example.chess.R
 import com.example.chess.board.Square
@@ -43,25 +41,19 @@ class ChessSquareView(context: Context, attrs: AttributeSet) : ConstraintLayout(
     }
 
     private fun setupDragAndDropListener() {
-        setOnDragListener { targetView, event ->
+        setOnDragListener { _, event ->
             when (event.action) {
                 DragEvent.ACTION_DRAG_STARTED -> {
                     event.clipDescription.hasMimeType(ClipDescription.MIMETYPE_TEXT_PLAIN)
                 }
 
                 DragEvent.ACTION_DROP -> {
-                    val draggedView = event.localState as View
                     if (LegalMoveManager.isLegalMove(this)) {
                         GameController.playMove(this)
                     } else {
                         return@setOnDragListener false
                     }
-                    val draggedViewParent = draggedView.parent as ViewGroup
-                    val dropTarget = targetView as ViewGroup
-                    draggedViewParent.removeView(draggedView)
-                    removeChessPieceViewFrom(dropTarget)
-                    dropTarget.addView(draggedView)
-                    draggedView.visibility = View.INVISIBLE
+
                     true
                 }
 
@@ -72,13 +64,6 @@ class ChessSquareView(context: Context, attrs: AttributeSet) : ConstraintLayout(
 
                 else -> false
             }
-        }
-    }
-
-    private fun removeChessPieceViewFrom(parent: ViewGroup) {
-        val chessPieceView = parent.children.firstOrNull { it is ChessPieceView }
-        if (chessPieceView != null) {
-            parent.removeView(chessPieceView)
         }
     }
 
