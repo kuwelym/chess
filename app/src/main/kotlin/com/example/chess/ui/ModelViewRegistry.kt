@@ -1,6 +1,5 @@
 package com.example.chess.ui
 
-import android.util.Log
 import android.view.View
 import androidx.core.view.children
 import com.example.chess.Move
@@ -49,9 +48,7 @@ class ModelViewRegistry<T, V : View> : ModelViewMapper<T, V>, BoardObserver {
     }
 
     override fun onMovePlayed(updatedSquares: List<Square>, board: Board) {
-
         updatedSquares.forEach { square ->
-            Log.d("ModelViewRegistry", "Updating square: $square")
             updateSquareView(square, board)
         }
 
@@ -94,7 +91,6 @@ class ModelViewRegistry<T, V : View> : ModelViewMapper<T, V>, BoardObserver {
             }
         }
         squareViewMapper.register(square, squareView)
-
     }
 
     companion object {
@@ -110,5 +106,4 @@ class ModelViewRegistry<T, V : View> : ModelViewMapper<T, V>, BoardObserver {
             ModelViewRegistry()
         }
     }
-
 }

@@ -1,57 +1,63 @@
 package com.example.chess
 
+import com.example.chess.board.BitBoard
 import com.example.chess.board.Board
 import com.example.chess.board.Position
-import com.example.chess.board.isOccupiedBy
-import com.example.chess.board.minus
 import com.example.chess.board.plus
 import com.example.chess.board.simulateMove
+import com.example.chess.board.toBit
+import com.example.chess.board.toPosition
+import com.example.chess.ui.AppData
 
 object MovesGenerator {
 
+    private const val PAWN_FORWARD_ONE = 8
+    private const val PAWN_ATTACK_LEFT = 7
+    private const val PAWN_ATTACK_RIGHT = 9
+    private const val KING_CASTLING_KING_SIDE_STEPS = 2
+    private const val KING_CASTLING_QUEEN_SIDE_STEPS = 3
+
     fun generate(board: Board, piece: Piece, validateForCheck: Boolean): Set<Move> =
         when (piece) {
-            is Pawn -> pawnMoves(board, piece) + enPassantMoves(board, piece)
-            is Knight -> generateMoves(board, piece, 1)
-            is Bishop -> generateMoves(board, piece, 7)
-            is Rook -> generateMoves(board, piece, 7)
-            is Queen -> generateMoves(board, piece, 7)
-            is King -> generateMoves(board, piece, 1) + castlingMoves(board, piece)
+            is Pawn -> board.bitBoard.pawnMoves(piece).union(enPassantMoves(piece))
+            is Knight -> board.bitBoard.generateMoves(piece, 1)
+            is Bishop -> board.bitBoard.generateMoves(piece, 7)
+            is Rook -> board.bitBoard.generateMoves(piece, 7)
+            is Queen -> board.bitBoard.generateMoves(piece, 7)
+            is King -> board.bitBoard.generateMoves(piece, 1)
+                .union(board.bitBoard.castlingMoves(piece))
         }.filter { !validateForCheck || !board.simulateMove(it).isCheckBitboard() }.toSet()
 
-    private fun pawnMoves(board: Board, piece: Pawn): Set<Move> {
-        val direction = piece.rowDirection
+    private fun BitBoard.pawnMoves(piece: Pawn): Set<Move> {
         val moves = mutableSetOf<Move>()
+        val position = piece.position
+        val bit = position.toBit()
+        val direction = piece.rowDirection
 
-        val forwardOne = piece.position + (direction to 0)
-        if (board.getSquareOrNull(forwardOne)?.isEmpty == true) {
-            moves += BasicMove(piece, forwardOne)
+        val forwardOne = if (direction > 0) bit shl PAWN_FORWARD_ONE else bit shr PAWN_FORWARD_ONE
+        if (forwardOne and (whitePieces or blackPieces) == 0UL) {
+            moves.add(BasicMove(piece, forwardOne.toPosition()))
         }
 
-        val forwardTwo = piece.position + (direction * 2 to 0)
-        if (piece.history.isEmpty() && board.getSquareOrNull(forwardTwo)?.isEmpty == true && board.getSquareOrNull(
-                forwardOne
-            )?.isEmpty == true
-        ) {
-            moves += BasicMove(piece, forwardTwo)
+        val forwardTwo =
+            if (direction > 0) forwardOne shl PAWN_FORWARD_ONE else forwardOne shr PAWN_FORWARD_ONE
+        if (piece.history.isEmpty() && forwardTwo and (whitePieces or blackPieces) == 0UL) {
+            moves.add(BasicMove(piece, forwardTwo.toPosition()))
         }
 
-        val attackLeft = piece.position + (direction to -1)
-        if (board.getSquareOrNull(attackLeft)?.isOccupiedBy(piece.player.opponent()) == true) {
-            moves += BasicMove(piece, attackLeft, true)
-        }
-
-        val attackRight = piece.position + (direction to 1)
-        if (board.getSquareOrNull(attackRight)?.isOccupiedBy(piece.player.opponent()) == true) {
-            moves += BasicMove(piece, attackRight, true)
+        val attacks = arrayOf(PAWN_ATTACK_LEFT, PAWN_ATTACK_RIGHT)
+        for (attack in attacks) {
+            val attackBit = if (direction > 0) bit shl attack else bit shr attack
+            if (attackBit and (piece.player.let { if (it == Player.WHITE) blackPieces else whitePieces }) != 0UL) {
+                moves.add(BasicMove(piece, attackBit.toPosition(), true))
+            }
         }
         return moves
     }
 
-    private fun enPassantMoves(board: Board, piece: Pawn): Set<Move> {
+    private fun enPassantMoves(piece: Pawn): Set<Move> {
         val moves = mutableSetOf<Move>()
-
-        val lastMove = board.playedMoves.lastOrNull() as? BasicMove ?: return moves
+        val lastMove = AppData.board.playedMoves.lastOrNull() as? BasicMove ?: return moves
         val lastPiece = lastMove.piece as? Pawn ?: return moves
         if (lastPiece.player == piece.player) return moves
 
@@ -62,62 +68,75 @@ object MovesGenerator {
         val left = piece.position + (0 to -1)
         val right = piece.position + (0 to 1)
         if (lastMove.dest == left || lastMove.dest == right) {
-            moves += EnPassantMove(piece, lastMove.dest + (direction to 0), lastMove.dest)
+            moves.add(EnPassantMove(piece, lastMove.dest + (direction to 0), lastMove.dest))
         }
 
         return moves
     }
 
-    private fun castlingMoves(board: Board, piece: King): Set<Move> {
+    private fun BitBoard.castlingMoves(piece: King): Set<Move> {
         val moves = mutableSetOf<Move>()
 
         if (piece.history.isNotEmpty()) return moves
 
-        val kingSideRook = board.getSquare(Position(piece.position.row, 7)).piece as? Rook
-        val queenSideRook = board.getSquare(Position(piece.position.row, 0)).piece as? Rook
+        val kingSideRook = AppData.board.getSquare(Position(piece.position.row, 7)).piece as? Rook
+        val queenSideRook = AppData.board.getSquare(Position(piece.position.row, 0)).piece as? Rook
 
-        fun isCastlingPathClear(board: Board, kingPosition: Position, direction: Int, steps: Int): Boolean {
-
-            return (1..steps).all { offset ->
-                val position = kingPosition + (0 to offset * direction)
-                board.getSquareOrNull(position)?.isEmpty == true
+        fun isCastlingPathClear(
+            bitBoard: BitBoard,
+            kingPosition: Position,
+            direction: Int,
+            steps: Int
+        ): Boolean {
+            val bit = kingPosition.toBit()
+            for (i in 1..steps) {
+                val newPosition = if (direction > 0) bit shl i else bit shr i
+                // check if the paths are under attack
+                if (bitBoard.whitePieces and newPosition != 0UL || bitBoard.blackPieces and newPosition != 0UL) {
+                    return false
+                }
+                if (this.isAttackedByAnyPiece(newPosition.toPosition(), AppData.board)) {
+                    return false
+                }
             }
+            return true
         }
 
-        if (kingSideRook != null && kingSideRook.history.isEmpty()) {
-            val kingSideEmpty =
-                isCastlingPathClear(board, piece.position, 1, 2)
-
-            if (kingSideEmpty) {
-                moves += CastlingMove(
+        if (kingSideRook != null && kingSideRook.history.isEmpty() &&
+            isCastlingPathClear(this, piece.position, 1, KING_CASTLING_KING_SIDE_STEPS)
+        ) {
+            moves.add(
+                CastlingMove(
                     piece,
                     piece.position + (0 to 2),
                     kingSideRook,
-                    piece.position + (0 to 1),
-                    false
+                    kingSideRook.position + (0 to -2),
+                    queenSide = false
                 )
-            }
+            )
         }
 
-        if (queenSideRook != null && queenSideRook.history.isEmpty()) {
-            val queenSideEmpty =
-                isCastlingPathClear(board, piece.position, -1, 3)
-
-            if (queenSideEmpty) {
-                moves += CastlingMove(
+        if (queenSideRook != null && queenSideRook.history.isEmpty() &&
+            isCastlingPathClear(this, piece.position, -1, KING_CASTLING_QUEEN_SIDE_STEPS)
+        ) {
+            moves.add(
+                CastlingMove(
                     piece,
-                    piece.position - (0 to 2),
+                    piece.position + (0 to -2),
                     queenSideRook,
-                    piece.position - (0 to 1),
-                    true
+                    queenSideRook.position + (0 to 3),
+                    queenSide = true
                 )
-            }
+            )
         }
 
         return moves
     }
 
-    private fun generateMoves(board: Board, piece: Piece, maxDistance: Int = 7): Set<Move> {
+    private fun BitBoard.generateMoves(
+        piece: Piece,
+        maxDistance: Int = 7
+    ): Set<Move> {
         fun generateMoveRecursively(
             direction: Direction,
             distance: Int,
@@ -126,26 +145,25 @@ object MovesGenerator {
             if (distance > maxDistance) return moves
 
             val newPosition = piece.position + (direction * distance)
-            val newSquare = board.getSquareOrNull(newPosition)
+            if (!newPosition.isValid) return moves
+
+            val newBit = newPosition.toBit()
+            val isOccupied = (whitePieces or blackPieces) and newBit != 0UL
+            val isOccupiedByOpponent =
+                if (piece.isWhite) blackPieces and newBit != 0UL else whitePieces and newBit != 0UL
 
             return when {
-                newSquare == null -> moves
-                newSquare.isEmpty -> generateMoveRecursively(
+                !isOccupied -> generateMoveRecursively(
                     direction,
                     distance + 1,
                     moves + BasicMove(piece, newPosition)
                 )
 
-                newSquare isOccupiedBy piece.player -> moves
-                newSquare isOccupiedBy piece.player.opponent() -> moves + BasicMove(
-                    piece,
-                    newPosition,
-                    true
-                )
-
-                else -> throw IllegalStateException("Invalid square")
+                isOccupiedByOpponent -> moves + BasicMove(piece, newPosition, true)
+                else -> moves
             }
         }
+
         return piece.moves.flatMap { generateMoveRecursively(it, 1) }.toSet()
     }
 

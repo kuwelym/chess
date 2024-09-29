@@ -13,8 +13,6 @@
         android:layout_height="match_parent"
         tools:context=".MainActivity">
 
-
-
         <androidx.recyclerview.widget.RecyclerView
             android:id="@+id/moves_history_recycler_view"
             android:layout_width="match_parent"
@@ -26,18 +24,6 @@
             app:playedNotations="@{viewModel.playedNotations}">
 
         </androidx.recyclerview.widget.RecyclerView>
-
-        <TextView
-            android:id="@+id/selectedPieceBit"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            app:layout_constraintBottom_toBottomOf="parent"
-            app:layout_constraintStart_toStartOf="parent"
-            android:text="@{viewModel.selectedPieceBit}">
-
-        </TextView>
-
-
 
         <com.example.chess.ui.ChessGridView
             android:id="@+id/chessboard"
